@@ -10,15 +10,23 @@ import 'dotenv/config';
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+// Support Railway's default DATABASE_URL var
+const dbUrl = process.env.DATABASE_URL || process.env.PG_CONNECTION_STRING;
+
+// Validate we have a real connection string (not empty or placeholder)
+const isValidUrl = dbUrl && dbUrl.startsWith('postgresql://') && dbUrl.includes('@');
+
+if (!isValidUrl) {
+  console.error('[DB] DATABASE_URL is missing or invalid. Value received:', dbUrl ? dbUrl.substring(0, 20) + '...' : 'undefined/empty');
+  const relevantVars = Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('PG') || k.includes('POSTGRES'));
+  console.error('[DB] Available env vars:', relevantVars.join(', '));
   throw new Error(
-    'Missing DATABASE_URL in .env\n' +
-    'Example: postgresql://user:password@host:5432/database'
+    'Missing DATABASE_URL in environment. Set in Railway: postgresql://user:password@host:5432/database'
   );
 }
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30_000,
