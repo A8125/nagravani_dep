@@ -207,10 +207,10 @@ export default function AdminDashboard() {
                             <motion.div 
                               layoutId={`image-admin-${c.id}`}
                               className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer border border-stone-200"
-                              onClick={() => setSelectedImage(`http://localhost:3000${c.photoPath}`)}
+                              onClick={() => setSelectedImage(`${import.meta.env.VITE_API_URL}${c.photoPath}`)}
                             >
                               <motion.img 
-                                src={`http://localhost:3000${c.photoPath}`} 
+                                src={`${import.meta.env.VITE_API_URL}${c.photoPath}`} 
                                 alt="Issue thumbnail"
                                 className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                               />
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
               <motion.img 
                 src={selectedImage} 
                 alt="Enlarged issue" 
-                layoutId={`image-admin-${complaints.find(c => `http://localhost:3000${c.photoPath}` === selectedImage)?.id}`}
+                layoutId={`image-admin-${complaints.find(c => `${import.meta.env.VITE_API_URL}${c.photoPath}` === selectedImage)?.id}`}
                 className="w-full h-full object-contain max-h-[90vh]"
               />
             </motion.div>
