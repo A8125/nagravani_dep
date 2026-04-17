@@ -8,6 +8,8 @@
 import pg from 'pg';
 import 'dotenv/config';
 
+console.log('[DB DEBUG] DATABASE_URL starts with:', process.env.DATABASE_URL?.substring(0, 30));
+
 const { Pool } = pg;
 
 // Support Railway's default DATABASE_URL var

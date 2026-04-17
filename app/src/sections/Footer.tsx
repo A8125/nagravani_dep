@@ -77,7 +77,7 @@ const companyLinks = [
             {/* Social Icons */}
             <div className="flex items-center gap-4 mt-6">
               <a
-                href="https://x.com/clarionhealthai"
+                href="https://x.com/nagaravaani"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-charcoal/70 hover:text-charcoal transition-colors"
@@ -88,7 +88,7 @@ const companyLinks = [
                 </svg>
               </a>
               <a
-                href="https://www.linkedin.com/company/clarionhealthai"
+                href="https://www.linkedin.com/in/js-abhishek-b5820b337/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-charcoal/70 hover:text-charcoal transition-colors"
