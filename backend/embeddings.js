@@ -11,12 +11,12 @@ export async function embed(text) {
     throw new Error('embed() requires a non-empty string');
   }
 
-  const response = await fetch(`${OLLAMA_BASE_URL}/api/embeddings`, {
+  const response = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'nomic-embed-text',
-      prompt: text
+      input: text
     })
   });
 
