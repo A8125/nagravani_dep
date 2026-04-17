@@ -26,11 +26,13 @@ export async function embed(text) {
 
   const data = await response.json();
 
-  if (!data.embedding || !Array.isArray(data.embedding)) {
+  const embedding = data.embeddings?.[0] ?? data.embedding;
+
+  if (!embedding || !Array.isArray(embedding)) {
     throw new Error('Unexpected Ollama embed response shape');
   }
 
-  return data.embedding; // float[] length 768
+  return embedding; // float[] length 768
 }
 
 // ── Batch embed (sequential to avoid rate limits) ──
