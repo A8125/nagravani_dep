@@ -4,13 +4,15 @@ import multer from "multer";
 import { v4 as uuid } from "uuid";
 import { query } from "../db.js";
 import { embed, toVectorLiteral } from "../embeddings.js";
-import fs from "fs";
-import path from "path";
 import { createHash } from 'crypto';
 import { generateComplaintId } from '../lib/generateComplaintId.js';
 import { generateProblemSummary } from '../ai.js';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
+
+// ── Initialize Supabase client ─────────────────────────────
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 // ── Constants ─────────────────────────────────────────────
 const VALID_CATEGORIES = [
@@ -96,7 +98,7 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
   // Borderline: vector similarity 0.60-0.75, use pg_trgm as tiebreaker
   if (vectorSim >= 0.60) {
     console.log(`[DEDUP] Borderline match (vector: ${Math.round(vectorSim * 100)}%), checking pg_trgm...`);
-    
+
     // Check pg_trgm similarity with the best candidate
     const { rows: trgmResult } = await query(
       `
@@ -106,21 +108,21 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
       `,
       [normalizedTitle, normalizeText(bestMatch.title)]
     );
-    
+
     const titleSim = trgmResult[0]?.title_similarity || 0;
     const wordSim = trgmResult[0]?.word_sim || 0;
-    
+
     // Use the higher of title_similarity or word_similarity
     const trgmSim = Math.max(titleSim, wordSim);
-    
+
     console.log(`[DEDUP] pg_trgm similarity: ${Math.round(trgmSim * 100)}%`);
-    
+
     // If pg_trgm similarity is high enough, it's a match
     if (trgmSim >= 0.5) {
       console.log(`[DEDUP] Match confirmed by pg_trgm`);
       return bestMatch;
     }
-    
+
     // Check other candidates if the best one didn't match
     for (let i = 1; i < candidates.length; i++) {
       const candidate = candidates[i];
@@ -132,9 +134,9 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
         `,
         [normalizedTitle, normalizeText(candidate.title)]
       );
-      
+
       const checkSim = Math.max(trgmCheck[0]?.title_similarity || 0, trgmCheck[0]?.word_sim || 0);
-      
+
       if (checkSim >= 0.5) {
         console.log(`[DEDUP] Match found with candidate ${i} (pg_trgm: ${Math.round(checkSim * 100)}%)`);
         return candidate;
@@ -153,18 +155,15 @@ async function regenerateSummary(problemId) {
     'SELECT description FROM complaints WHERE problem_id = $1 ORDER BY "createdAt" ASC',
     [problemId]
   );
-  
+
   const descriptions = rows.map(r => r.description);
-  
+
   // Use AI to generate summary
   return await generateProblemSummary(descriptions);
 }
 
-// ── File upload ───────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (_req, file, cb) => cb(null, `${uuid()}-${file.originalname}`),
-});
+// ── File upload (memory storage) ───────────────────────────
+const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: { files: 1, fileSize: 5 * 1024 * 1024 },
@@ -228,9 +227,25 @@ router.post("/report", upload.single("photo"), async (req, res) => {
 
     const severity = quickSeverity(`${title} ${description}`);
     const deptId = CATEGORY_TO_DEPT_ID[category] || null;
-    const photoPath = req.file ? `/uploads/${req.file.filename}` : null;
     const latVal = lat ? parseFloat(lat) : null;
     const lngVal = lng ? parseFloat(lng) : null;
+
+    // 3. Upload photo to Supabase Storage if provided
+    let photoUrl = null;
+    if (req.file) {
+      const filename = `${Date.now()}-${req.file.originalname}`;
+      const { error } = await supabase.storage
+        .from('complaint-photos')
+        .upload(filename, req.file.buffer, { contentType: req.file.mimetype });
+
+      if (error) {
+        console.error('[UPLOAD ERROR]', error);
+        throw new Error(`Failed to upload photo: ${error.message}`);
+      }
+
+      photoUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/complaint-photos/${filename}`;
+      console.log("[PHOTO UPLOAD]", photoUrl);
+    }
 
     // Hash Aadhaar
     const aadhaarHash = createHash('sha256').update(aadhaar).digest('hex');
@@ -269,7 +284,7 @@ router.post("/report", upload.single("photo"), async (req, res) => {
           category,
           description,
           ward,
-          photoPath,
+          photoUrl,
           latVal,
           lngVal,
           ward,
@@ -354,7 +369,7 @@ router.post("/report", upload.single("photo"), async (req, res) => {
          category,
          description,
          ward,
-         photoPath,
+         photoUrl,
          latVal,
          lngVal,
          ward,

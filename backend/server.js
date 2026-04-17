@@ -6,9 +6,6 @@ import 'dotenv/config'; // Must be FIRST to load env vars before any other impor
 
 import express from "express";
 import cors from "cors";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
 
 import complaintsRouter from "./routes/complaints.js";
 import departmentsRouter from "./routes/departments.js";
@@ -16,12 +13,7 @@ import usersRouter from "./routes/users.js";
 import aiRouter from "./routes/ai.js";
 import { dbHealthCheck } from "./db.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
-
-// ── Ensure uploads folder exists ──────────────────────────
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
 // ── App setup ─────────────────────────────────────────────
 const app = express();
@@ -34,7 +26,6 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(uploadsDir));
 
 // ── Request logger (dev) ──────────────────────────────────
 app.use((req, _res, next) => {
@@ -65,8 +56,9 @@ app.get("/health", async (_req, res) => {
     platform: "NagaraVaani",
     city: "Mandya, Karnataka",
     center: { lat: 12.5218, lng: 76.8951 },
-    ai_model: "llama-3.2-3b-preview (Groq)",
-    embed_model: "nomic-embed-text-v1.5 (Together AI)",
+    ai_model: "llama3.2:3b (Ollama)",
+    embed_model: "nomic-embed-text (Ollama)",
+    storage: "Supabase Storage",
     database: { status: dbStatus, time: dbTime },
     timestamp: new Date().toISOString(),
   });
@@ -113,7 +105,8 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`\n🏛️  NagaraVaani backend running on http://localhost:${PORT}`);
-  console.log(`📊  pgvector + nomic-embed-text-v1.5 enabled (Together AI)`);
-  console.log(`🤖  Chat model: llama-3.2-3b-preview (Groq)`);
+  console.log(`📊  pgvector + nomic-embed-text enabled (Ollama)`);
+  console.log(`🤖  Chat model: llama3.2:3b (Ollama)`);
+  console.log(`📸  Storage: Supabase Storage (complaint-photos bucket)`);
   console.log(`📡  API index:   http://localhost:${PORT}/api\n`);
 });
