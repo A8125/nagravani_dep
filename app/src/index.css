@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 30 8% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 8% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 8% 16%;
+    --primary: 30 8% 16%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 30 5% 40%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 40 10% 90%;
+    --muted-foreground: 30 5% 40%;
+    --accent: 38 40% 61%;
+    --accent-foreground: 30 8% 16%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 10% 90%;
+    --input: 40 10% 90%;
+    --ring: 30 8% 16%;
+    --radius: 0.625rem;
+    --sidebar-background: 40 20% 97%;
+    --sidebar-foreground: 30 5% 40%;
+    --sidebar-primary: 30 8% 16%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 40 10% 90%;
+    --sidebar-accent-foreground: 30 8% 16%;
+    --sidebar-border: 40 10% 90%;
+    --sidebar-ring: 30 8% 16%;
+  }
+
+  /* ====== DARK MODE — overrides ALL colour tokens ====== */
+  .dark {
+    --background: 222 47% 9%;
+    --foreground: 210 20% 92%;
+    --card: 222 40% 12%;
+    --card-foreground: 210 20% 92%;
+    --popover: 222 40% 12%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 210 20% 92%;
+    --primary-foreground: 222 47% 9%;
+    --secondary: 215 20% 30%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 38 40% 45%;
+    --accent-foreground: 210 20% 92%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 25% 22%;
+    --input: 215 25% 18%;
+    --ring: 210 20% 60%;
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 215 15% 60%;
+    --sidebar-primary: 210 20% 92%;
+    --sidebar-primary-foreground: 222 47% 9%;
+    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 215 25% 22%;
+    --sidebar-ring: 210 20% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-cream text-charcoal font-sans antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* ── Dark mode body + major surface overrides ─────── */
+  .dark body {
+    background-color: #0d1117;
+    color: #e6edf3;
+  }
+  .dark .bg-cream { background-color: #0d1117 !important; }
+  .dark .bg-white { background-color: #161b22 !important; }
+  .dark .bg-stone-100 { background-color: #161b22 !important; }
+  .dark .bg-stone-50 { background-color: #1c2128 !important; }
+  .dark .text-charcoal { color: #e6edf3 !important; }
+  .dark .text-stone { color: #8b949e !important; }
+  .dark .text-slate-800 { color: #e6edf3 !important; }
+  .dark .text-stone-500 { color: #8b949e !important; }
+  .dark .text-stone-600 { color: #c9d1d9 !important; }
+  .dark .text-stone-700 { color: #e6edf3 !important; }
+  .dark .border-stone-200 { border-color: #30363d !important; }
+  .dark .border-border { border-color: #30363d !important; }
+  .dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+
+  .dark .divide-stone-100 > * + * { border-color: #21262d !important; }
+  .dark .hover\:bg-stone-50\/50:hover { background-color: rgba(22,27,34,0.5) !important; }
+  .dark .hover\:bg-stone-50:hover { background-color: #1c2128 !important; }
+  .dark .bg-stone-200 { background-color: #21262d !important; }
+  .dark .bg-orange-100 { background-color: rgba(194,100,50,0.25) !important; }
+  .dark .bg-blue-100 { background-color: rgba(56,139,253,0.2) !important; }
+  .dark .bg-green-100 { background-color: rgba(46,160,67,0.2) !important; }
+  .dark .bg-orange-50 { background-color: rgba(194,100,50,0.15) !important; }
+  .dark .bg-blue-50 { background-color: rgba(56,139,253,0.1) !important; }
+  .dark .bg-green-50 { background-color: rgba(46,160,67,0.1) !important; }
+  .dark .border-orange-200 { border-color: rgba(194,100,50,0.4) !important; }
+  .dark .border-blue-200 { border-color: rgba(56,139,253,0.3) !important; }
+  .dark .border-green-200 { border-color: rgba(46,160,67,0.3) !important; }
+  .dark .bg-charcoal { background-color: #e6edf3 !important; color: #0d1117 !important; }
+  .dark .text-charcoal\/80 { color: rgba(230,237,243,0.8) !important; }
+  .dark .bg-cream\/95 { background-color: rgba(13,17,23,0.95) !important; }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F8F6F2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E5E2DD;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D5D2CD;
+}
+
+/* Waveform animation */
+.waveform-bar {
+  animation: waveform 1.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.waveform-bar:nth-child(2n) {
+  animation-delay: 0.1s;
+}
+
+.waveform-bar:nth-child(3n) {
+  animation-delay: 0.2s;
+}
+
+.waveform-bar:nth-child(4n) {
+  animation-delay: 0.3s;
+}
+
+@keyframes waveform {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+
+/* Link underline animation */
+.link-underline {
+  position: relative;
+}
+
+.link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: currentColor;
+  transition: width 0.2s ease-out;
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}

@@ -1,0 +1,19 @@
+Complaint Priority Algorithm:
+
+New complaint submitted
+       ↓
+Generate embedding for title + description
+       ↓
+Compare against embeddings of open complaints
+in same category + ward
+       ↓
+Similarity > 0.85?
+  YES → return duplicate complaint ID to frontend
+        → increment original's upvoteCount + recalculate priorityScore
+        → don't create new complaint
+  NO  → create new complaint, store its embedding
+
+
+Priority Score Formula:
+
+priorityScore = upvoteCount * 10 + daysSinceCreated * 2

@@ -1,0 +1,81 @@
+DHO: 82322 20737
+CMC: 08232-224555
+
+
+
+road map to implement the following:
+change the complaint id's to smth more readable with codes CMP-<department_id>-<complaint_number>
+add name and adhaar credentials to the database for every complaint, but not to the problems table
+
+Phase 1 — Database Schema Changes
+1a. Add a complaint counter sequence
+Create a PostgreSQL sequence to auto-increment complaint numbers per department, so CMP-PWD-0001, CMP-PWD-0002, etc. are generated reliably without race conditions.
+1b. Alter the complaints table
+
+Change id from VARCHAR(36) (UUID) to a readable string like CMP-PWD-0001
+Add citizen_name VARCHAR(255) NOT NULL
+Add aadhaar_hash VARCHAR(64) NOT NULL — store a SHA-256 hash of the Aadhaar number, never the raw number itself (legal and privacy requirement)
+Add aadhaar_last4 CHAR(4) — last 4 digits only, for display purposes
+
+1c. Update the problems table FK
+Since complaints.id is changing format, update the problems → complaints foreign key reference accordingly.
+
+Phase 2 — ID Generation Logic (Backend)
+2a. ID format: CMP-<DEPT_SHORT>-<ZERO_PADDED_NUMBER>
+Example: CMP-PWD-0001, CMP-CMC-0042
+2b. Counter logic in routes/complaints.js
+
+Create a complaint_counters table: (department_short VARCHAR PK, number_of_complaints INTEGER DEFAULT 0)
+On each new complaint submission, do an atomic UPDATE complaint_counters SET number_of_complaints = number_of_complaints + 1 WHERE department_short = $1 RETURNING number_of_complaints inside a transaction
+Format: CMP-${deptShort}-${String(lastNumber).padStart(4, '0')}
+Merged/duplicate complaints also get their own unique ID (they're still separate complaint records)
+
+
+Phase 3 — Aadhaar Handling (Backend)
+3a. Never store raw Aadhaar
+In routes/complaints.js, before inserting:
+jsimport { createHash } from 'crypto';
+const aadhaarHash = createHash('sha256').update(rawAadhaar).digest('hex');
+const aadhaarLast4 = rawAadhaar.slice(-4);
+3b. Validation
+
+Aadhaar must be exactly 12 digits
+Name must be non-empty, max 100 chars
+Neither field goes to the problems table
+
+
+Phase 4 — Frontend Changes
+4a. Complaint submission form (ComplaintPortal.tsx)
+Add two new fields before the submit button:
+
+Full Name — text input, required
+Aadhaar Number — 12-digit number input, masked (show as XXXX XXXX 1234 after entry), required
+
+4b. Success screen
+Show the new readable ID: Your complaint ID: CMP-PWD-0001
+4c. Community Feed (CommunityFeed.tsx)
+Problem cards show the problem's linked complaint IDs as CMP-PWD-0001, CMP-PWD-0002 — not UUIDs.
+4d. Do NOT display Aadhaar anywhere in the UI — not even last 4 digits on public-facing pages. Only show citizen name on their own complaint page.
+
+Phase 5 — API Response Updates
+Update response shapes:
+
+POST /api/report → complaint.id is now CMP-PWD-0001 format
+GET /api/complaints/:id → accepts the new readable ID format
+GET /api/feed/:id → linked complaints show readable IDs
+
+
+Migration Order
+1. Create complaint_counters table + seed one row per department
+2. Alter complaints table (add name, aadhaar_hash, aadhaar_last4 columns)
+3. Change complaints.id column type (careful: drop FK first, re-add after)
+4. Update backend ID generation logic
+5. Update frontend form
+6. Test end-to-end
+
+What NOT to change
+
+problems table — no name/Aadhaar fields, no ID format change
+departments table
+department_embeddings table
+ai.js, routes/ai.js, routes/users.js, db.js, embeddings.js

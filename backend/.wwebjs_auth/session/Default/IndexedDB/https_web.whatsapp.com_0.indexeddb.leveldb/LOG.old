@@ -1,0 +1,17 @@
+2026/04/05-23:14:49.914 12fe8 Reusing MANIFEST /Users/monithsurya/Desktop/puttanaiha/Kimi_Agent_Clone/backend/.wwebjs_auth/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/04/05-23:14:49.915 12fe8 Recovering log #12
+2026/04/05-23:14:49.915 12fe8 Reusing old log /Users/monithsurya/Desktop/puttanaiha/Kimi_Agent_Clone/backend/.wwebjs_auth/session/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000012.log 
+2026/04/05-23:14:49.915 12fe8 Delete type=2 #11
+2026/04/05-23:14:49.920 12fe8 Level-0 table #17: started
+2026/04/05-23:14:49.924 12fe8 Level-0 table #17: 4403 bytes OK
+2026/04/05-23:14:49.925 12fe8 Delete type=0 #12
+2026/04/05-23:14:49.926 12fe6 Manual compaction at level-0 from '\x00\x0e\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0f\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/04/05-23:14:49.926 12fe6 Manual compaction at level-1 from '\x00\x0e\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0f\x00\x00\x00' @ 0 : 0; will stop at '\x00\x0f\x01 \x03\x00\x00\x00\x00\x00\x00\x14@\x00\x03\x00\x00\x00\x00\x00\x00\x14@' @ 9617 : 1
+2026/04/05-23:14:49.926 12fe6 Compacting 1@1 + 1@2 files
+2026/04/05-23:14:49.929 12fe6 Generated table #18@1: 195 keys, 4251 bytes
+2026/04/05-23:14:49.929 12fe6 Compacted 1@1 + 1@2 files => 4251 bytes
+2026/04/05-23:14:49.938 12fe6 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/04/05-23:14:49.939 12fe6 Delete type=2 #17
+2026/04/05-23:14:49.940 12ff0 Manual compaction at level-1 from '\x00\x0f\x01 \x03\x00\x00\x00\x00\x00\x00\x14@\x00\x03\x00\x00\x00\x00\x00\x00\x14@' @ 9617 : 1 .. '\x00\x0f\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/04/05-23:14:49.959 12fef Manual compaction at level-0 from '\x00\x0f\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x10\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/04/05-23:14:49.960 12ff0 Manual compaction at level-1 from '\x00\x0f\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x10\x00\x00\x00' @ 0 : 0; will stop at (end)

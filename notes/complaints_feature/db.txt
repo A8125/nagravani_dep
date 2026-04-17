@@ -1,0 +1,50 @@
+# 1. Check both tables exist and row counts
+psql -U postgres -d nagaravaani -c "SELECT 'problems' AS table, COUNT(*) FROM problems UNION ALL SELECT 'complaints', COUNT(*) FROM complaints;"
+
+# 2. Check problems with upvote and priority info
+psql -U postgres -d nagaravaani -c "SELECT id, title, ward, category, \"upvoteCount\", \"priorityScore\", status, summary FROM problems ORDER BY \"priorityScore\" DESC;"
+
+# 3. Check complaints and their linked problems
+psql -U postgres -d nagaravaani -c "SELECT id, title, ward, category, problem_id, status, \"createdAt\" FROM complaints ORDER BY \"createdAt\" DESC;"
+
+# 4. Verify FK links are intact (complaints properly linked to problems)
+psql -U postgres -d nagaravaani -c "SELECT c.id AS complaint_id, c.title AS complaint_title, p.id AS problem_id, p.\"upvoteCount\" FROM complaints c LEFT JOIN problems p ON p.id = c.problem_id;"
+
+# 5. Check embeddings are stored
+psql -U postgres -d nagaravaani -c "SELECT id, title, embedding IS NOT NULL AS has_embedding FROM problems;"
+psql -U postgres -d nagaravaani -c "SELECT id, title, embedding IS NOT NULL AS has_embedding FROM complaints;"
+
+
+CLEAR TABLES:
+
+psql -U postgres -d nagaravaani -c "TRUNCATE complaints, problems CASCADE; UPDATE complaint_counters SET number_of_complaints = 0;"
+
+
+
+
+# 1. Check complaint was created with readable ID                                                                                                                           master
+psql -U postgres -d nagaravaani -c "SELECT id, title, ward, citizen_name, aadhaar_last4, problem_id FROM complaints;"
+
+# 2. Check counter incremented
+psql -U postgres -d nagaravaani -c "SELECT * FROM complaint_counters;"
+
+# 3. Check problem was created and linked
+psql -U postgres -d nagaravaani -c "SELECT id, title, ward, \"upvoteCount\", summary FROM problems;"
+
+# 4. Make sure aadhaar_hash is stored but raw aadhaar is not
+psql -U postgres -d nagaravaani -c "SELECT id, aadhaar_hash, aadhaar_last4 FROM complaints;"
+
+
+test commands:
+
+curl -X POST http://localhost:3000/api/report \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Streetlight not working", "category": "streetlight", "ward": "Gandhi Nagar", "citizen_name": "Amit", "aadhaar": "123456789012", "description": "The streetlight near the main market has been broken for 2 weeks"}'
+
+curl -X POST http://localhost:3000/api/report \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Street light broken", "category": "streetlight", "ward": "Gandhi Nagar", "citizen_name": "Priya", "aadhaar": "987654321098", "description": "No light on the road near market area, very dangerous at night"}'
+
+
+supa pw:
+Bx8mLbyILnQSQqIx

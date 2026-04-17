@@ -1,0 +1,67 @@
+artifacts/nagravani-web/
+├── .env                    # VITE_API_URL configured
+├── src/
+│   ├── App.tsx            # Basic scaffold with Tailwind classes
+│   ├── App.css            # Empty (ready for custom styles)
+│   ├── index.css          # Tailwind CSS import + theme colors
+│   ├── main.tsx           # React entry point
+│   └── assets/            # Static assets
+├── tailwind.config.js     # Custom colors (primary, primary-light, primary-dark)
+├── vite.config.ts         # PORT and BASE_PATH env var support
+└── package.json           # Scripts and dependencies
+
+
+RUNNING:
+
+API_SERVER:
+
+PORT=3000 pnpm dev
+
+WEB:
+
+PORT=5173 BASE_PATH=/ pnpm dev
+
+
+Running the DB:
+
+sudo systemctl start postgresql
+sudo systemctl status postgresql
+
+
+removing db entries:
+
+psql -U nagravani_user -d nagravani -h localhost -c "DELETE FROM complaints WHERE id = '1f35180f-5742-448c-a3c9-bba95ee5e439';"
+
+verify with upvotes:
+psql -U nagravani_user -d nagravani -h localhost -c "SELECT id, title, category, ward, \"upvoteCount\", \"priorityScore\", embedding IS NOT NULL as has_embedding FROM complaints;"
+
+clear table:
+psql -U nagravani_user -d nagravani -h localhost -c "TRUNCATE complaints;"
+
+
+
+test new db (use this):
+# 1. Check all tables exist
+psql -U postgres -d nagaravaani -c "\dt"
+
+# 2. Check departments are seeded
+psql -U postgres -d nagaravaani -c "SELECT short, name FROM departments;"
+
+# 3. Check any existing complaints
+psql -U postgres -d nagaravaani -c "SELECT id, title, ward, \"upvoteCount\", \"priorityScore\", embedding IS NOT NULL as has_embedding FROM complaints;"
+
+clear db:
+
+psql -U postgres -d nagaravaani -c "TRUNCATE complaints;"
+
+
+change dept names:
+
+psql -U postgres -d nagaravaani -c "
+INSERT INTO departments (id, name, short, description, officer_phone, color, icon) VALUES
+  ('4532bd59-eb0a-4c05-bace-9ee210ee0078', 'Public Works Department',      'PWD',  'Roads, bridges, public infrastructure', '08232-225100', '#F97316', '🛣️'),
+  ('3737a8b7-3fb2-40e2-a687-534afd04439b', 'City Electric Supply Company', 'CESC', 'Electricity, street lighting',          '1912',         '#EAB308', '⚡'),
+  ('11e1918e-7c31-4be6-9b2f-374449e4e0ee', 'City Municipal Council',       'CMC',  'Water, sewage, garbage, drainage',      '08232-224004', '#3B82F6', '💧'),
+  ('892f379f-538b-457d-ad3c-d06259edb4cb', 'Mandya Urban Dev Authority',   'MUDA', 'Building plans, zoning, encroachment',  '08232-222100', '#8B5CF6', '🏗️'),
+  ('9d6c4f8f-6f4e-4a9f-a9ec-c8d3fe63833b', 'District Health Office',      'DHO',  'Public health, sanitation, disease',    '08232-223000', '#10B981', '🏥');
+"
