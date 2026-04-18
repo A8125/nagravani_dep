@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { t } from '@/lib/translations';
 
@@ -40,12 +41,12 @@ export function HeroSection() {
               {tr.heroSubtitle}
             </p>
             <div className="flex flex-wrap gap-4">
-              <a href="#report"
+              <Link to="/raise"
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-charcoal text-white text-sm font-medium rounded-full hover:bg-charcoal/90 transition-all hover:scale-[1.02] shadow-sm"
               >
                 {tr.heroCTA1}
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </Link>
               <a href="#map"
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-white text-charcoal text-sm font-medium rounded-full border border-border hover:bg-transparent transition-all hover:scale-[1.02]"
               >

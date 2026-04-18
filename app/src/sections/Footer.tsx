@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const productLinks = [
-  { name: 'Live Civic Feed', href: '#feed' },
-  { name: 'Report Issue', href: '#report' },
-  { name: 'Directory', href: '#directory' },
+  { name: 'Live Civic Feed', href: '/feed', isRoute: true },
+  { name: 'Report Issue', href: '/raise', isRoute: true },
+  { name: 'Directory', href: '/departments', isRoute: true },
 ];
 
 const specialtyLinks = [
@@ -107,12 +108,21 @@ const companyLinks = [
             <ul className="space-y-3">
               {productLinks.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
-                  >
-                    {link.name}
-                  </a>
+                  {link.isRoute ? (
+                    <Link
+                      to={link.href}
+                      className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
+                    >
+                      {link.name}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
+                    >
+                      {link.name}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
