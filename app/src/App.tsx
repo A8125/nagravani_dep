@@ -52,13 +52,26 @@ function LandingPage() {
         </MapContainer>
       </div>
 
-      {/* Cream wash over the map so content is always readable */}
+      {/* Light mode: cream wash over the map so content is always readable */}
       <div
+        className="dark:hidden"
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 1,
           background: 'rgba(253,251,246,0.45)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Dark mode: left-side gradient overlay for text legibility only */}
+      <div
+        className="hidden dark:block"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1,
+          background: 'linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 40%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />

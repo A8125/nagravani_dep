@@ -36,8 +36,8 @@ export function Navbar() {
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-cream/95 dark:bg-gray-900/95 backdrop-blur-md shadow-nav border-b border-border dark:border-gray-700'
-          : 'bg-cream/80 backdrop-blur-sm'
+          ? 'bg-cream/95 dark:bg-[#0f0f0f]/95 backdrop-blur-md shadow-nav border-b border-border dark:border-white/10'
+          : 'bg-cream/80 dark:bg-[#0f0f0f]/80 backdrop-blur-sm'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -82,19 +82,19 @@ export function Navbar() {
 
             {/* Dark mode */}
             <button onClick={toggleDark}
-              className="p-2 rounded-full text-stone dark:text-gray-400 hover:text-charcoal dark:hover:text-white hover:bg-stone/10 dark:hover:bg-gray-700 transition-all">
+              className="p-2 rounded-full text-stone dark:text-gray-400 hover:text-charcoal dark:hover:text-white hover:bg-stone/10 dark:hover:bg-white/10 transition-all">
               {darkMode ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
             </button>
 
             {/* Language */}
             <button onClick={toggleLang}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border border-border dark:border-gray-600 text-stone dark:text-gray-300 hover:bg-stone/10 dark:hover:bg-gray-700 transition-all">
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-full border border-border dark:border-white/10 text-stone dark:text-gray-300 hover:bg-stone/10 dark:hover:bg-white/10 transition-all">
               <Languages className="w-3 h-3" />
               {lang === 'en' ? 'ಕನ್ನಡ' : 'EN'}
             </button>
 
             {/* Thin separator */}
-            <span className="w-px h-5 bg-stone/20 dark:bg-gray-600 mx-1" />
+            <span className="w-px h-5 bg-stone/20 dark:bg-white/10 mx-1" />
 
             {/* Govt Portal — ghost/outline */}
             <Link to="/admin"
@@ -112,11 +112,11 @@ export function Navbar() {
 
           {/* ── Mobile: compact controls ── */}
           <div className="lg:hidden flex items-center gap-1.5">
-            <button onClick={toggleDark} className="p-2 text-stone dark:text-gray-300">
+            <button onClick={toggleDark} className="p-2 text-stone dark:text-gray-300 hover:text-charcoal dark:hover:text-white">
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button onClick={toggleLang}
-              className="px-2 py-1 text-[11px] font-medium text-stone dark:text-gray-300 border border-border dark:border-gray-600 rounded-full">
+              className="px-2 py-1 text-[11px] font-medium text-stone dark:text-gray-300 border border-border dark:border-white/10 rounded-full">
               {lang === 'en' ? 'ಕ' : 'EN'}
             </button>
             <button onClick={() => setOpen(!open)} className="p-2">
@@ -137,7 +137,7 @@ export function Navbar() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="lg:hidden bg-cream dark:bg-gray-900 border-t border-border dark:border-gray-700"
+            className="lg:hidden bg-cream dark:bg-[#0f0f0f] border-t border-border dark:border-white/10"
           >
             <div className="px-6 py-5 space-y-3">
               {navLinks.map(link => (
@@ -148,9 +148,9 @@ export function Navbar() {
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-3 border-t border-border dark:border-gray-700 flex flex-col gap-2.5">
+              <div className="pt-3 border-t border-border dark:border-white/10 flex flex-col gap-2.5">
                 <Link to="/admin" onClick={() => setOpen(false)}
-                  className="text-sm font-medium text-stone dark:text-gray-400">
+                  className="text-sm font-medium text-stone dark:text-gray-400 hover:text-charcoal dark:hover:text-white">
                   {lang === 'kn' ? 'ಸರ್ಕಾರ ಪೋರ್ಟಲ್' : 'Govt Portal'}
                 </Link>
                 <Link to="/raise" onClick={() => setOpen(false)}

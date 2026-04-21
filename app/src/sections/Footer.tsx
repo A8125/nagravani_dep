@@ -24,7 +24,7 @@ const companyLinks = [
 
   export function Footer() {
     return (
-      <footer className="relative py-16 lg:py-20 bg-cream/80 backdrop-blur-xl border-t border-charcoal/5 z-20">
+      <footer className="relative py-16 lg:py-20 bg-cream/80 dark:bg-[#0f0f0f] backdrop-blur-xl border-t border-charcoal/5 dark:border-white/10 z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -42,7 +42,7 @@ const companyLinks = [
                 viewBox="0 0 32 32"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="text-charcoal"
+                className="text-charcoal dark:text-white"
               >
                 <path
                   d="M8 8C8 8 12 4 16 4C20 4 24 8 24 8"
@@ -63,14 +63,14 @@ const companyLinks = [
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="text-xl font-bold text-charcoal">NagaraVaani (ನಗರ ವಾಣಿ)</span>
+              <span className="text-xl font-bold text-charcoal dark:text-white">NagaraVaani (ನಗರ ವಾಣಿ)</span>
             </a>
-            <p className="text-sm text-charcoal/80 font-medium mb-4">
+            <p className="text-sm text-charcoal/80 dark:text-gray-400 font-medium mb-4">
               © 2026 NagaraVaani Mandya.
             </p>
             <a
               href="mailto:support@nagaravaani.in"
-              className="text-sm font-medium text-charcoal/80 hover:text-charcoal transition-colors link-underline"
+              className="text-sm font-medium text-charcoal/80 dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition-colors link-underline"
             >
               support@nagaravaani.in
             </a>
@@ -81,7 +81,7 @@ const companyLinks = [
                 href="https://x.com/nagaravaani"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-charcoal/70 hover:text-charcoal transition-colors"
+                className="text-charcoal/70 dark:text-gray-500 hover:text-charcoal dark:hover:text-white transition-colors"
                 aria-label="X (Twitter)"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -92,7 +92,7 @@ const companyLinks = [
                 href="https://www.linkedin.com/in/js-abhishek-b5820b337/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-charcoal/70 hover:text-charcoal transition-colors"
+                className="text-charcoal/70 dark:text-gray-500 hover:text-charcoal dark:hover:text-white transition-colors"
                 aria-label="LinkedIn"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -104,21 +104,21 @@ const companyLinks = [
 
           {/* Product Links */}
           <div>
-            <h4 className="text-sm font-semibold text-charcoal mb-4">Platform</h4>
+            <h4 className="text-sm font-semibold text-charcoal dark:text-white mb-4">Platform</h4>
             <ul className="space-y-3">
               {productLinks.map((link) => (
                 <li key={link.name}>
                   {link.isRoute ? (
                     <Link
                       to={link.href}
-                      className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
+                      className="text-sm font-medium text-charcoal/70 dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition-colors link-underline"
                     >
                       {link.name}
                     </Link>
                   ) : (
                     <a
                       href={link.href}
-                      className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
+                      className="text-sm font-medium text-charcoal/70 dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition-colors link-underline"
                     >
                       {link.name}
                     </a>
@@ -130,13 +130,13 @@ const companyLinks = [
 
           {/* By Specialty Links */}
           <div>
-            <h4 className="text-sm font-semibold text-charcoal mb-4">Categories</h4>
+            <h4 className="text-sm font-semibold text-charcoal dark:text-white mb-4">Categories</h4>
             <ul className="space-y-3">
               {specialtyLinks.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
+                    className="text-sm font-medium text-charcoal/70 dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition-colors link-underline"
                   >
                     {link.name}
                   </a>
@@ -147,13 +147,13 @@ const companyLinks = [
 
           {/* Company Links */}
           <div>
-            <h4 className="text-sm font-semibold text-charcoal mb-4">Community</h4>
+            <h4 className="text-sm font-semibold text-charcoal dark:text-white mb-4">Community</h4>
             <ul className="space-y-3">
               {companyLinks.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition-colors link-underline"
+                    className="text-sm font-medium text-charcoal/70 dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition-colors link-underline"
                   >
                     {link.name}
                   </a>

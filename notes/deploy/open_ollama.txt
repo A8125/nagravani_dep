@@ -2,4 +2,4 @@
 ngrok http 11434
 
  #open ollama:
- sudo pkill ollama && OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS=* OLLAMA_MODELS=/var/lib/ollama/.ollama/models ollama serve                                                          took 49m2s
+ sudo pkill ollama && OLLAMA_HOST=0.0.0.0 OLLAMA_ORIGINS=* OLLAMA_MODELS=/var/lib/ollama/.ollama/models ollama serve

@@ -38,32 +38,34 @@
 
   /* ====== DARK MODE — overrides ALL colour tokens ====== */
   .dark {
-    --background: 222 47% 9%;
-    --foreground: 210 20% 92%;
-    --card: 222 40% 12%;
-    --card-foreground: 210 20% 92%;
-    --popover: 222 40% 12%;
-    --popover-foreground: 210 20% 92%;
-    --primary: 210 20% 92%;
-    --primary-foreground: 222 47% 9%;
-    --secondary: 215 20% 30%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
-    --accent: 38 40% 45%;
-    --accent-foreground: 210 20% 92%;
+    /* Near-black page background (#0f0f0f ~ hsl(0 0% 6%)) */
+    --background: 0 0% 6%;
+    --foreground: 210 20% 95%;
+    /* Slightly lighter card surface (#1a1a1a ~ hsl(0 0% 10%)) */
+    --card: 0 0% 10%;
+    --card-foreground: 210 20% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 210 20% 95%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 10% 15%;
+    --muted-foreground: 215 15% 65%;
+    --accent: 38 40% 50%;
+    --accent-foreground: 210 20% 95%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 215 25% 22%;
-    --input: 215 25% 18%;
+    --border: 220 10% 18%;
+    --input: 220 10% 15%;
     --ring: 210 20% 60%;
-    --sidebar-background: 222 47% 9%;
-    --sidebar-foreground: 215 15% 60%;
-    --sidebar-primary: 210 20% 92%;
-    --sidebar-primary-foreground: 222 47% 9%;
-    --sidebar-accent: 215 25% 18%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 215 25% 22%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 215 15% 65%;
+    --sidebar-primary: 210 20% 95%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 220 10% 15%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 220 10% 18%;
     --sidebar-ring: 210 20% 60%;
   }
 }
@@ -82,39 +84,69 @@
 
   /* ── Dark mode body + major surface overrides ─────── */
   .dark body {
-    background-color: #0d1117;
-    color: #e6edf3;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
-  .dark .bg-cream { background-color: #0d1117 !important; }
-  .dark .bg-white { background-color: #161b22 !important; }
-  .dark .bg-stone-100 { background-color: #161b22 !important; }
-  .dark .bg-stone-50 { background-color: #1c2128 !important; }
-  .dark .text-charcoal { color: #e6edf3 !important; }
-  .dark .text-stone { color: #8b949e !important; }
-  .dark .text-slate-800 { color: #e6edf3 !important; }
-  .dark .text-stone-500 { color: #8b949e !important; }
-  .dark .text-stone-600 { color: #c9d1d9 !important; }
-  .dark .text-stone-700 { color: #e6edf3 !important; }
-  .dark .border-stone-200 { border-color: #30363d !important; }
-  .dark .border-border { border-color: #30363d !important; }
-  .dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
 
-  .dark .divide-stone-100 > * + * { border-color: #21262d !important; }
-  .dark .hover\:bg-stone-50\/50:hover { background-color: rgba(22,27,34,0.5) !important; }
-  .dark .hover\:bg-stone-50:hover { background-color: #1c2128 !important; }
-  .dark .bg-stone-200 { background-color: #21262d !important; }
-  .dark .bg-orange-100 { background-color: rgba(194,100,50,0.25) !important; }
-  .dark .bg-blue-100 { background-color: rgba(56,139,253,0.2) !important; }
-  .dark .bg-green-100 { background-color: rgba(46,160,67,0.2) !important; }
-  .dark .bg-orange-50 { background-color: rgba(194,100,50,0.15) !important; }
-  .dark .bg-blue-50 { background-color: rgba(56,139,253,0.1) !important; }
-  .dark .bg-green-50 { background-color: rgba(46,160,67,0.1) !important; }
-  .dark .border-orange-200 { border-color: rgba(194,100,50,0.4) !important; }
-  .dark .border-blue-200 { border-color: rgba(56,139,253,0.3) !important; }
-  .dark .border-green-200 { border-color: rgba(46,160,67,0.3) !important; }
-  .dark .bg-charcoal { background-color: #e6edf3 !important; color: #0d1117 !important; }
-  .dark .text-charcoal\/80 { color: rgba(230,237,243,0.8) !important; }
-  .dark .bg-cream\/95 { background-color: rgba(13,17,23,0.95) !important; }
+  /* Page background - true dark near-black */
+  .dark .bg-cream { background-color: #0f0f0f !important; }
+  .dark .bg-cream\/95 { background-color: rgba(15,15,15,0.95) !important; }
+
+  /* Card surfaces - slightly lighter for layering */
+  .dark .bg-white { background-color: #1a1a1a !important; }
+  .dark .bg-stone-100 { background-color: #1c1c1e !important; }
+  .dark .bg-stone-50 { background-color: #1e1e20 !important; }
+  .dark .bg-stone-200 { background-color: #2c2c2e !important; }
+
+  /* Text colors - high contrast */
+  .dark .text-charcoal { color: #f5f5f5 !important; }
+  .dark .text-charcoal\/80 { color: rgba(245,245,245,0.8) !important; }
+  .dark .text-stone { color: #a0a0a0 !important; }
+  .dark .text-slate-800 { color: #f5f5f5 !important; }
+  .dark .text-stone-500 { color: #a0a0a0 !important; }
+  .dark .text-stone-600 { color: #d0d0d0 !important; }
+  .dark .text-stone-700 { color: #f5f5f5 !important; }
+
+  /* Borders - subtle light borders */
+  .dark .border-stone-200 { border-color: rgba(255,255,255,0.08) !important; }
+  .dark .border-border { border-color: rgba(255,255,255,0.08) !important; }
+  .dark .border-stone-300 { border-color: rgba(255,255,255,0.12) !important; }
+
+  /* Shadows */
+  .dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+  .dark .shadow-nav { box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important; }
+
+  /* Dividers */
+  .dark .divide-stone-100 > * + * { border-color: rgba(255,255,255,0.06) !important; }
+  .dark .divide-white\/6 > * + * { border-color: rgba(255,255,255,0.06) !important; }
+  
+  /* Border colors with opacity */
+  .dark .border-white\/8 { border-color: rgba(255,255,255,0.08) !important; }
+  .dark .border-white\/10 { border-color: rgba(255,255,255,0.10) !important; }
+  .dark .border-white\/20 { border-color: rgba(255,255,255,0.20) !important; }
+  
+  /* Background opacity helpers */
+  .dark .bg-white\/10 { background-color: rgba(255,255,255,0.10) !important; }
+
+  /* Hover states */
+  .dark .hover\:bg-stone-50\/50:hover { background-color: rgba(30,30,32,0.5) !important; }
+  .dark .hover\:bg-stone-50:hover { background-color: #2c2c2e !important; }
+  .dark .hover\:bg-white:hover { background-color: #2c2c2e !important; }
+
+  /* Status colors with proper contrast */
+  .dark .bg-orange-100 { background-color: rgba(251,191,36,0.15) !important; }
+  .dark .bg-blue-100 { background-color: rgba(96,165,250,0.15) !important; }
+  .dark .bg-green-100 { background-color: rgba(52,211,153,0.15) !important; }
+  .dark .bg-red-100 { background-color: rgba(248,113,113,0.15) !important; }
+  .dark .bg-orange-50 { background-color: rgba(251,191,36,0.1) !important; }
+  .dark .bg-blue-50 { background-color: rgba(96,165,250,0.1) !important; }
+  .dark .bg-green-50 { background-color: rgba(52,211,153,0.1) !important; }
+  .dark .border-orange-200 { border-color: rgba(251,191,36,0.3) !important; }
+  .dark .border-blue-200 { border-color: rgba(96,165,250,0.3) !important; }
+  .dark .border-green-200 { border-color: rgba(52,211,153,0.3) !important; }
+
+  /* Inverted charcoal (for buttons/accents that need to flip) */
+  .dark .bg-charcoal { background-color: #f5f5f5 !important; color: #0f0f0f !important; }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
@@ -143,6 +175,19 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #D5D2CD;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
 }
 
 /* Waveform animation */
