@@ -9,36 +9,50 @@ import { embed, toVectorLiteral } from './embeddings.js';
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const CHAT_MODEL = 'llama3.2:3b';
 
-// ── Low-level Ollama chat completion ───────────────────
+// ── Low-level Ollama chat completion with timeout ───────────
+// Returns null if Ollama fails instead of throwing
 async function callLLM(messages, systemPrompt) {
-  const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: CHAT_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages
-      ],
-      stream: false
-    })
-  });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
-  if (!response.ok) {
-    throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: CHAT_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages
+        ],
+        stream: false
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.warn(`[LLM] Ollama returned ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.message?.content ?? null;
+  } catch (err) {
+    console.warn('[LLM] Ollama unavailable:', err.message);
+    return null;
   }
-
-  const data = await response.json();
-  return data.message.content;
 }
 
 // ── Low-level chat completion (main entry point) ────────────
+// Returns null if Ollama unavailable
 async function ollamaChat(systemPrompt, userMessage, opts = {}) {
   const content = await callLLM(
     [{ role: 'user', content: userMessage }],
     systemPrompt
   );
-  return content?.trim() ?? '';
+  return content?.trim() ?? null;
 }
 
 // ── Low-level chat completion with model param ────────────
@@ -54,6 +68,10 @@ async function ollamaChatWithModel(model, systemPrompt, userMessage, opts = {}) 
 export async function dispatchDepartmentSemantic(description) {
   try {
     const embedding = await embed(description);
+    if (!embedding) {
+      console.log('[ROUTING] Embedding unavailable, using direct dispatch');
+      return dispatchDepartment(description);
+    }
     const vectorLiteral = toVectorLiteral(embedding);
 
     const { rows } = await query(`
@@ -69,10 +87,10 @@ export async function dispatchDepartmentSemantic(description) {
       return rows[0].short;
     }
   } catch (err) {
-    console.warn('[ROUTING] Vector routing failed, falling back to LLM:', err.message);
+    console.warn('[ROUTING] Vector routing failed:', err.message);
   }
 
-  // Fallback: LLM text classification
+  // Fallback: direct dispatch
   return dispatchDepartment(description);
 }
 
@@ -87,6 +105,7 @@ DHO (health, hospitals, sanitation, disease).
 Respond with exactly one code, nothing else.`,
     description
   );
+  if (!answer) return 'PWD'; // Fallback if Ollama unavailable
   const code = answer.trim().toUpperCase().split(/\s+/)[0];
   const valid = ['PWD', 'CESC', 'CMC', 'MUDA', 'DHO'];
   return valid.includes(code) ? code : 'PWD';
@@ -102,6 +121,7 @@ moderate inconvenience as Medium, minor issue as Low.
 Respond with only one word.`,
     description
   );
+  if (!answer) return 'Medium'; // Fallback if Ollama unavailable
   const valid = ['Low', 'Medium', 'High', 'Critical'];
   const trimmed = answer.trim();
   return valid.includes(trimmed) ? trimmed : 'Medium';
@@ -118,7 +138,7 @@ Encroachment, Parks & Recreation, Traffic, Other.
 Respond with only the category name, nothing else.`,
     description
   );
-  return answer.trim() || 'Other';
+  return answer?.trim() || 'Other';
 }
 
 // ── 5. RAG-powered citizen Q&A ────────────────────────────

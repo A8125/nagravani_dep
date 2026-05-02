@@ -213,17 +213,31 @@ router.post("/report", upload.single("photo"), async (req, res) => {
       return res.status(400).json({ error: 'aadhaar must be exactly 12 digits' });
     }
 
-    // 1. Embed
+    // 1. Embed (graceful fallback if Ollama unavailable)
+    let vectorLiteral = null;
     console.log("[2] embedding...");
-    const embedding = await embed(`${title} ${description}`);
-    const vectorLiteral = toVectorLiteral(embedding);
-    console.log("[2] embed done");
+    try {
+      const embedding = await embed(`${title} ${description}`);
+      if (embedding) {
+        vectorLiteral = toVectorLiteral(embedding);
+        console.log("[2] embed done");
+      } else {
+        console.log("[2] embed skipped (Ollama unavailable), proceeding without embeddings");
+      }
+    } catch (err) {
+      console.warn("[2] embed failed:", err.message);
+    }
 
-    // 2. Search problems table for duplicates using enhanced detection
-    console.log("[3] dedup query against problems...");
-    const normalizedTitle = normalizeText(title);
-    const problemMatch = await findDuplicateProblem(vectorLiteral, normalizedTitle, category, ward);
-    console.log("[3] dedup done, match found:", problemMatch ? 'yes' : 'no');
+    // 2. Search problems table for duplicates (skip if no embedding)
+    let problemMatch = null;
+    if (vectorLiteral) {
+      console.log("[3] dedup query against problems...");
+      const normalizedTitle = normalizeText(title);
+      problemMatch = await findDuplicateProblem(vectorLiteral, normalizedTitle, category, ward);
+      console.log("[3] dedup done, match found:", problemMatch ? 'yes' : 'no');
+    } else {
+      console.log("[3] dedup skipped (no embedding)");
+    }
 
     const severity = quickSeverity(`${title} ${description}`);
     const deptId = CATEGORY_TO_DEPT_ID[category] || null;

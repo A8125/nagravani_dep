@@ -5,34 +5,60 @@
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
+// ── Check if Ollama is available ───────────────────────
+export async function isOllamaAvailable() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, { signal: controller.signal });
+    clearTimeout(timeout);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── Generate a single embedding vector ───────────────────
+// Returns null if Ollama is unavailable instead of throwing
 export async function embed(text) {
   if (!text || typeof text !== 'string') {
-    throw new Error('embed() requires a non-empty string');
+    return null;
   }
 
-  const response = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'nomic-embed-text',
-      input: text
-    })
-  });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-  if (!response.ok) {
-    throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'nomic-embed-text',
+        input: text
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.warn(`[EMBED] Ollama returned ${response.status}, skipping embeddings`);
+      return null;
+    }
+
+    const data = await response.json();
+    const embedding = data.embeddings?.[0] ?? data.embedding;
+
+    if (!embedding || !Array.isArray(embedding)) {
+      console.warn('[EMBED] Invalid embedding response, skipping');
+      return null;
+    }
+
+    return embedding; // float[] length 768
+  } catch (err) {
+    console.warn('[EMBED] Ollama unavailable:', err.message);
+    return null;
   }
-
-  const data = await response.json();
-
-  const embedding = data.embeddings?.[0] ?? data.embedding;
-
-  if (!embedding || !Array.isArray(embedding)) {
-    throw new Error('Unexpected Ollama embed response shape');
-  }
-
-  return embedding; // float[] length 768
 }
 
 // ── Batch embed (sequential to avoid rate limits) ──

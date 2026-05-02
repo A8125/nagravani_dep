@@ -268,45 +268,45 @@ export default function ComplaintPortal() {
                   />
                 </div>
 
-                 {/* Severity - 4-option grid */}
-                 <div>
-                   <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-2">
-                     {isKannada ? 'ತೀವ್ರತೆ' : 'Severity'} <span className="text-stone/60">({isKannada ? 'ಐಚ್ಛಿಕ' : 'optional'})</span>
-                   </label>
+                {/* Citizen Name */}
+                <div>
+                  <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-1.5">
+                    {isKannada ? 'ಹೆಸರು' : 'Full Name'} <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    value={citizenName}
+                    onChange={(e) => setCitizenName(e.target.value)}
+                    placeholder={isKannada ? 'ನಿಮ್ಮ ಹೆಸರು ನಮೂದಿಸಿ' : 'Enter your full name'}
+                    maxLength={100}
+                    required
+                    className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-charcoal outline-none focus:border-charcoal transition-colors bg-cream"
+                  />
+                </div>
 
-                 {/* Citizen Name */}
-                 <div>
-                   <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-1.5">
-                     {isKannada ? 'ಹೆಸರು' : 'Full Name'} <span className="text-red-400">*</span>
-                   </label>
-                   <input
-                     value={citizenName}
-                     onChange={(e) => setCitizenName(e.target.value)}
-                     placeholder={isKannada ? 'ನಿಮ್ಮ ಹೆಸರು ನಮೂದಿಸಿ' : 'Enter your full name'}
-                     maxLength={100}
-                     required
-                     className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-charcoal outline-none focus:border-charcoal transition-colors bg-cream"
-                   />
-                 </div>
+                {/* Aadhaar Number */}
+                <div>
+                  <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-1.5">
+                    {isKannada ? 'ಆಧಾರ್ ಸಂಖ್ಯೆ' : 'Aadhaar Number'} <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    value={aadhaarRaw}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                      setAadhaarRaw(digits);
+                    }}
+                    placeholder="12-digit Aadhaar number"
+                    inputMode="numeric"
+                    required
+                    className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-charcoal outline-none focus:border-charcoal transition-colors bg-cream"
+                  />
+                </div>
 
-                 {/* Aadhaar Number */}
-                 <div>
-                   <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-1.5">
-                     {isKannada ? 'ಆಧಾರ್ ಸಂಖ್ಯೆ' : 'Aadhaar Number'} <span className="text-red-400">*</span>
-                   </label>
-                    <input
-                      value={aadhaarRaw}
-                      onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, '').slice(0, 12);
-                        setAadhaarRaw(digits);
-                      }}
-                      placeholder="12-digit Aadhaar number"
-                      inputMode="numeric"
-                      required
-                      className="w-full border border-border rounded-xl px-4 py-2.5 text-sm text-charcoal outline-none focus:border-charcoal transition-colors bg-cream"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
+                {/* Severity - 4-option grid */}
+                <div>
+                  <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-2">
+                    {isKannada ? 'ತೀವ್ರತೆ' : 'Severity'} <span className="text-stone/60">({isKannada ? 'ಐಚ್ಛಿಕ' : 'optional'})</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
                     {SEVERITIES.map((s) => (
                       <button
                         key={s.value}
@@ -324,7 +324,7 @@ export default function ComplaintPortal() {
                         }`}>
                           {isKannada ? s.labelKn : s.label}
                         </div>
-                        <div className="text-xs text-stone">
+                        <div className="text-xs text-stone mt-0.5">
                           {isKannada ? s.descKn : s.desc}
                         </div>
                       </button>
