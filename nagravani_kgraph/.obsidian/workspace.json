@@ -1,0 +1,273 @@
+{
+  "main": {
+    "id": "39b20c76a3abde3b",
+    "type": "split",
+    "children": [
+      {
+        "id": "40b73144b7b3186d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3102698de3d05fd1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "DB_Queries.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "DB_Queries"
+            }
+          },
+          {
+            "id": "df8a8225af479edf",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Ollama_Deployment.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Ollama_Deployment"
+            }
+          },
+          {
+            "id": "068eeb21757dec8d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "DB_Queries.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "DB_Queries"
+            }
+          },
+          {
+            "id": "0f011bfa7165e30f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Nagravani.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Nagravani"
+            }
+          },
+          {
+            "id": "187a30dbf1be5151",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Ollama_Deployment.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Ollama_Deployment"
+            }
+          },
+          {
+            "id": "43f7e1d2d2542ee7",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ],
+        "currentTab": 4
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1660feac77804aa4",
+    "type": "split",
+    "children": [
+      {
+        "id": "f89dbb918823349b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d02542837f69d840",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "17e4ec9e4c4c377b",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "8ff28a3b4979c202",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "ae5c449bf3fc30c0",
+    "type": "split",
+    "children": [
+      {
+        "id": "8ebbb0bc149dfb27",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6094988025f641e4",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Ollama_Deployment.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Ollama_Deployment"
+            }
+          },
+          {
+            "id": "b404fb38b7a75672",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Ollama_Deployment.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Ollama_Deployment"
+            }
+          },
+          {
+            "id": "48d48ebff5d362e9",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "f00fc7ccaa6857e4",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "846d365f623bc7ff",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Ollama_Deployment.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Ollama_Deployment"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "187a30dbf1be5151",
+  "lastOpenFiles": [
+    "Features to Implement.md",
+    "Nagravani.md",
+    "DB_Queries.md",
+    "Ollama_Deployment.md",
+    "Complaint_System_Architecture.md",
+    "Upvote_system.md",
+    "Complaint_Priority.md",
+    "Database_Queries.md",
+    "nagravani",
+    "Complaint_ID_Aadhaar_Implementation.md",
+    "Basic_Implementation.md",
+    "Complaint_Priority_Algorithm.md",
+    "Upvote_System.md",
+    "Implementation_Questions.md",
+    "edges.json",
+    "nodes.json",
+    "Welcome.md"
+  ]
+}
