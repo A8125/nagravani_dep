@@ -1,0 +1,3 @@
+ALTER TABLE complaints
+  ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'web',
+  ADD COLUMN IF NOT EXISTS whatsapp_number VARCHAR(20);

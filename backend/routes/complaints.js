@@ -194,7 +194,20 @@ router.post("/report", upload.single("photo"), async (req, res) => {
     ward: req.body?.ward,
   });
   try {
-    const { title, category, description, ward, lat, lng, citizen_name, aadhaar } = req.body;
+    const {
+      title,
+      category,
+      description,
+      ward,
+      lat,
+      lng,
+      citizen_name,
+      aadhaar,
+      severity: requestedSeverity,
+      photo_url,
+      source = "web",
+      whatsapp_number = null,
+    } = req.body;
 
     if (!title || !category || !description || !ward)
       return res
@@ -239,13 +252,16 @@ router.post("/report", upload.single("photo"), async (req, res) => {
       console.log("[3] dedup skipped (no embedding)");
     }
 
-    const severity = quickSeverity(`${title} ${description}`);
+    const severityValues = new Set(["Low", "Medium", "High", "Critical"]);
+    const severity = severityValues.has(requestedSeverity)
+      ? requestedSeverity
+      : quickSeverity(`${title} ${description}`);
     const deptId = CATEGORY_TO_DEPT_ID[category] || null;
     const latVal = lat ? parseFloat(lat) : null;
     const lngVal = lng ? parseFloat(lng) : null;
 
     // 3. Upload photo to Supabase Storage if provided
-    let photoUrl = null;
+    let photoUrl = photo_url || null;
     if (req.file) {
       const filename = `${Date.now()}-${req.file.originalname}`;
       const { error } = await supabase.storage
@@ -287,9 +303,9 @@ router.post("/report", upload.single("photo"), async (req, res) => {
          INSERT INTO complaints
            (id, title, category, description, ward, "photoPath",
             lat, lng, address, status, severity, embedding, department_id, problem_id,
-            citizen_name, aadhaar_hash, aadhaar_last4)
+            citizen_name, aadhaar_hash, aadhaar_last4, source, whatsapp_number)
          VALUES
-           ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10,$11::vector,$12,$13,$14,$15,$16)
+           ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10,$11::vector,$12,$13,$14,$15,$16,$17,$18)
          RETURNING *
        `,
         [
@@ -309,6 +325,8 @@ router.post("/report", upload.single("photo"), async (req, res) => {
           citizen_name.trim(),
           aadhaarHash,
           aadhaarLast4,
+          source,
+          whatsapp_number,
         ],
       );
 
@@ -372,9 +390,9 @@ router.post("/report", upload.single("photo"), async (req, res) => {
        INSERT INTO complaints
          (id, title, category, description, ward, "photoPath",
           lat, lng, address, status, severity, embedding, department_id, problem_id,
-          citizen_name, aadhaar_hash, aadhaar_last4)
+          citizen_name, aadhaar_hash, aadhaar_last4, source, whatsapp_number)
        VALUES
-         ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10,$11::vector,$12,$13,$14,$15,$16)
+         ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',$10,$11::vector,$12,$13,$14,$15,$16,$17,$18)
        RETURNING *
     `,
       [
@@ -394,6 +412,8 @@ router.post("/report", upload.single("photo"), async (req, res) => {
          citizen_name.trim(),
          aadhaarHash,
          aadhaarLast4,
+         source,
+         whatsapp_number,
        ],
     );
 

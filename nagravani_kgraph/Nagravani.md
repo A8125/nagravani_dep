@@ -78,5 +78,6 @@ The project uses PostgreSQL with pgvector for semantic search, Ollama for local 
 
 
 [[DB_Queries]]
+[[Features to Implement]]
 
 

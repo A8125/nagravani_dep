@@ -13,3 +13,6 @@ clear tables:
 
 TRUNCATE complaints, problems CASCADE;
 UPDATE complaint_counters SET number_of_complaints = 0;
+
+
+

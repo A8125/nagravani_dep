@@ -11,6 +11,7 @@ import complaintsRouter from "./routes/complaints.js";
 import departmentsRouter from "./routes/departments.js";
 import usersRouter from "./routes/users.js";
 import aiRouter from "./routes/ai.js";
+import whatsappRouter from "./routes/whatsapp.js";
 import { dbHealthCheck } from "./db.js";
 
 const PORT = process.env.PORT || 3000;
@@ -43,6 +44,7 @@ app.use("/api", complaintsRouter); // POST /api/report  GET /api/feed etc.
 app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/ai", aiRouter); // POST /api/ai/ask  GET /api/ai/similar
+app.use("/api/whatsapp", whatsappRouter);
 
 // ── Health check ──────────────────────────────────────────
 app.get("/health", async (_req, res) => {
