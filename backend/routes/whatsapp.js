@@ -60,8 +60,13 @@ function formatNumberedOptions(options) {
 }
 
 async function loadWardOptions() {
-  const { rows } = await query("SELECT name FROM wards ORDER BY name");
-  return rows.map((row) => row.name).filter(Boolean);
+  try {
+    const { rows } = await query("SELECT name FROM wards ORDER BY name");
+    return rows.map((row) => row.name).filter(Boolean);
+  } catch (err) {
+    console.warn("[WHATSAPP] wards lookup failed, falling back to free-text ward entry:", err.message);
+    return [];
+  }
 }
 
 function parseCategorySelection(text) {
@@ -262,19 +267,32 @@ router.post("/webhook", async (req, res) => {
         session.data.categoryLabel = selected.label;
         session.wards = await loadWardOptions();
         session.step = "WARD";
-        twiml.message(
-          `Choose your ward:\n${session.wards
-            .map((ward, index) => `${index + 1}. ${ward}`)
-            .join("\n")}`,
-        );
+        if (session.wards.length > 0) {
+          twiml.message(
+            `Choose your ward:\n${session.wards
+              .map((ward, index) => `${index + 1}. ${ward}`)
+              .join("\n")}`,
+          );
+        } else {
+          twiml.message("What is your ward name?");
+        }
         break;
       }
 
       case "WARD": {
-        const ward = parseWardSelection(text, session.wards);
-        if (!ward) {
-          twiml.message("Invalid ward. Reply with the ward number or exact ward name.");
-          break;
+        let ward = null;
+        if (session.wards.length > 0) {
+          ward = parseWardSelection(text, session.wards);
+          if (!ward) {
+            twiml.message("Invalid ward. Reply with the ward number or exact ward name.");
+            break;
+          }
+        } else {
+          if (!text) {
+            twiml.message("Please send your ward name.");
+            break;
+          }
+          ward = text;
         }
         session.data.ward = ward;
         session.step = "DESCRIPTION";

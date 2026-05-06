@@ -73,8 +73,7 @@
               "title": "Graph view"
             }
           }
-        ],
-        "currentTab": 3
+        ]
       }
     ],
     "direction": "vertical"
@@ -236,10 +235,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "187a30dbf1be5151",
+  "active": "df8a8225af479edf",
   "lastOpenFiles": [
-    "Nagravani.md",
     "Features to Implement.md",
+    "Nagravani.md",
     "DB_Queries.md",
     "Ollama_Deployment.md",
     "Complaint_System_Architecture.md",
