@@ -153,7 +153,9 @@ export default function CommunityFeed() {
                       </span>
                     </div>
                      <h3 className="font-medium text-charcoal text-base mb-1">{p.title}</h3>
-                     <p className="text-sm text-stone line-clamp-2 mb-2">{p.summary || p.description || 'No description available'}</p>
+                     <p className="mb-2 text-[14px] text-stone/85 line-clamp-2">
+                      {p.summary || p.description || 'No summary available yet.'}
+                     </p>
                      <div className="flex items-center gap-1 text-xs text-stone mb-3">
                       <MapPin className="w-3 h-3" /> {p.ward}{p.address ? ` • ${p.address}` : ''}
                     </div>

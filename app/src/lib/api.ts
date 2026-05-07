@@ -43,6 +43,14 @@ export interface Department {
   active_complaints: number;
 }
 
+export interface WardStat {
+  ward: string;
+  count: number;
+  avg_priority: number;
+  top_category: string | null;
+  severity?: string | null;
+}
+
 export function getStats() {
   return req<{
     success: boolean;
@@ -52,6 +60,10 @@ export function getStats() {
       avg_resolution_hours: number;
     };
   }>("/api/stats");
+}
+
+export function getWardStats() {
+  return req<WardStat[]>("/api/stats/wards");
 }
 
 export function getFeed(params?: {

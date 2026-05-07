@@ -6,7 +6,6 @@ import { query } from "../db.js";
 import { embed, toVectorLiteral } from "../embeddings.js";
 import { createHash } from 'crypto';
 import { generateComplaintId } from '../lib/generateComplaintId.js';
-import { generateProblemSummary } from '../ai.js';
 import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
@@ -156,10 +155,45 @@ async function regenerateSummary(problemId) {
     [problemId]
   );
 
-  const descriptions = rows.map(r => r.description);
+  const descriptions = rows
+    .map((row) => row.description)
+    .filter((description) => typeof description === "string" && description.trim().length > 0);
 
-  // Use AI to generate summary
-  return await generateProblemSummary(descriptions);
+  if (descriptions.length === 0) return null;
+
+  return generateSummary(descriptions);
+}
+
+async function generateSummary(descriptions) {
+  const cleanedDescriptions = descriptions
+    .map((description) => String(description || "").trim())
+    .filter(Boolean);
+
+  if (cleanedDescriptions.length === 0) return "";
+
+  const prompt = `You are a civic complaint summarizer for Mandya city.
+Multiple citizens have reported the same issue. Here are their descriptions:
+
+${cleanedDescriptions.map((d, i) => `Citizen ${i + 1}: "${d}"`).join('\n')}
+
+Write a single sentence summary of this civic issue. Be specific about the problem and location. No fluff, no filler phrases.`;
+
+  const response = await fetch('http://localhost:11434/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama3.2:3b',
+      prompt,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama summary generation failed with status ${response.status}`);
+  }
+
+  const data = await response.json();
+  return String(data.response || '').trim();
 }
 
 // ── File upload (memory storage) ───────────────────────────
@@ -358,7 +392,7 @@ router.post("/report", upload.single("photo"), async (req, res) => {
     const problemId = uuid();
     const problemPriority = calcPriorityScore(1, new Date().toISOString());
     // Generate AI summary for single complaint too (can enhance it)
-    const problemSummary = await generateProblemSummary([`${title}: ${description}`]);
+    const problemSummary = await generateSummary([description]);
 
     // Create new problem
     await query(

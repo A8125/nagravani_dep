@@ -5,6 +5,7 @@ import { getFeed, upvoteComplaint, type Complaint } from '../lib/api';
 import { AlertTriangle, Zap, Droplets, Wind, Heart, MapPin, Users, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import WardHeatMap from '../components/WardHeatMap';
 
 // Fix default leaflet icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -56,6 +57,12 @@ function FitBounds({ complaints }: { complaints: Complaint[] }) {
 
 const CATEGORIES = ['All', 'Roads', 'Water', 'Power', 'Drainage', 'Health'];
 const STATUSES   = ['All', 'pending', 'inProgress', 'resolved'];
+const MAP_MODES = [
+  { id: 'problems', label: 'Problems' },
+  { id: 'heatmap', label: 'Heat Map' },
+] as const;
+
+type MapMode = (typeof MAP_MODES)[number]['id'];
 
 export default function MapPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -65,6 +72,8 @@ export default function MapPage() {
   const [activeStatus, setActiveStatus]     = useState('All');
   const [selected, setSelected]     = useState<Complaint | null>(null);
   const [mapReady, setMapReady]     = useState(false);
+  const [mapMode, setMapMode]       = useState<MapMode>('problems');
+  const [expandedSummaryId, setExpandedSummaryId] = useState<string | null>(null);
 
   useEffect(() => {
     // Ensure map container has dimensions before rendering map
@@ -90,6 +99,11 @@ export default function MapPage() {
   const handleUpvote = async (id: string) => {
     const r = await upvoteComplaint(id);
     setComplaints(prev => prev.map(c => c.id === id ? { ...c, upvoteCount: r.upvoteCount, priorityScore: r.priorityScore } : c));
+  };
+
+  const handleSelectComplaint = (complaint: Complaint) => {
+    setSelected(complaint);
+    setExpandedSummaryId(prev => prev === complaint.id ? prev : null);
   };
 
   const statusColor: Record<string, string> = {
@@ -140,39 +154,64 @@ export default function MapPage() {
       {/* Map + Sidebar */}
       <div className="max-w-7xl mx-auto px-4 pb-10 grid lg:grid-cols-3 gap-6">
         {/* Map */}
-        <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-lg border border-border bg-stone-100" style={{ height: 520 }}>
+        <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-lg border border-border bg-stone-100 relative" style={{ height: 520 }}>
           {!mapReady ? (
             <div className="flex items-center justify-center h-full bg-cream">
               <div className="animate-spin w-8 h-8 border-2 border-charcoal border-t-transparent rounded-full" />
             </div>
           ) : (
-            <MapContainer center={[12.5218, 76.8951]} zoom={14} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-              />
-              <FitBounds complaints={filtered} />
-              {filtered
-                .filter(c => typeof c.lat === 'number' && typeof c.lng === 'number' && !isNaN(c.lat) && !isNaN(c.lng))
-                .map(c => (
-                <Marker key={c.id} position={[c.lat, c.lng]} icon={coloredIcon(c.category)}
-                  eventHandlers={{ click: () => setSelected(c) }}>
-                  <Popup>
-                    <div className="min-w-[180px]">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor[c.status] || ''}`}>
-                        {c.status}
-                      </span>
-                      <p className="font-semibold mt-1 text-sm">{c.title}</p>
-                      <p className="text-xs text-gray-500">{c.dept_short} · {c.upvoteCount} affected</p>
-                      <button onClick={() => handleUpvote(c.id)}
-                        className="mt-2 text-xs bg-charcoal text-white px-3 py-1 rounded-full hover:bg-charcoal/80 transition-colors">
-                        + Add Me Too
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+            <>
+              <div className="absolute right-4 top-4 z-[1000] rounded-full border border-border bg-white/95 p-1 shadow-lg backdrop-blur">
+                <div className="flex items-center gap-1">
+                  {MAP_MODES.map(mode => (
+                    <button
+                      key={mode.id}
+                      onClick={() => setMapMode(mode.id)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                        mapMode === mode.id
+                          ? 'bg-charcoal text-white shadow-sm'
+                          : 'text-stone hover:bg-cream'
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <MapContainer center={[12.5218, 76.8951]} zoom={14} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+                />
+                {mapMode === 'problems' && (
+                  <>
+                    <FitBounds complaints={filtered} />
+                    {filtered
+                      .filter(c => typeof c.lat === 'number' && typeof c.lng === 'number' && !isNaN(c.lat) && !isNaN(c.lng))
+                      .map(c => (
+                      <Marker key={c.id} position={[c.lat, c.lng]} icon={coloredIcon(c.category)}
+                        eventHandlers={{ click: () => handleSelectComplaint(c) }}>
+                        <Popup>
+                          <div className="min-w-[180px]">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor[c.status] || ''}`}>
+                              {c.status}
+                            </span>
+                            <p className="font-semibold mt-1 text-sm">{c.title}</p>
+                            <p className="text-xs text-gray-500">{c.dept_short} · {c.upvoteCount} affected</p>
+                            <button onClick={() => handleUpvote(c.id)}
+                              className="mt-2 text-xs bg-charcoal text-white px-3 py-1 rounded-full hover:bg-charcoal/80 transition-colors">
+                              + Add Me Too
+                            </button>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </>
+                )}
+                {mapMode === 'heatmap' && <WardHeatMap />}
+              </MapContainer>
+            </>
           )}
         </div>
 
@@ -186,7 +225,7 @@ export default function MapPage() {
             return (
               <motion.div key={c.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                onClick={() => setSelected(c)}
+                onClick={() => handleSelectComplaint(c)}
                 className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${
                   selected?.id === c.id ? 'border-charcoal bg-white' : 'border-border bg-white'
                 }`}>
@@ -197,14 +236,34 @@ export default function MapPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-charcoal line-clamp-1">{c.title}</p>
-                    <p className="text-xs text-stone mt-0.5 line-clamp-1">{c.address}</p>
                     <div className="flex items-center gap-3 mt-2">
+                      <span className="text-xs text-stone line-clamp-1">{c.ward}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor[c.status.toLowerCase()] || ''}`}>{c.status}</span>
                       <span className="flex items-center gap-1 text-xs text-stone">
                         <Users className="w-3 h-3" />{c.upvoteCount}
                       </span>
                       <span className="text-xs font-medium" style={{ color: CATEGORY_COLOR[c.category] }}>{c.dept_short}</span>
                     </div>
+                    <p className="mt-2 text-sm text-stone/85">
+                      {expandedSummaryId === c.id ? (
+                        c.summary || 'No summary available yet.'
+                      ) : (
+                        <span className="line-clamp-3">{c.summary || 'No summary available yet.'}</span>
+                      )}
+                    </p>
+                    {!!c.summary && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedSummaryId(prev => prev === c.id ? null : c.id);
+                        }}
+                        className="mt-1 text-sm text-stone underline underline-offset-2 hover:text-charcoal transition-colors"
+                      >
+                        {expandedSummaryId === c.id ? 'Show less' : 'Read more'}
+                      </button>
+                    )}
+                    <p className="mt-1 text-xs text-stone line-clamp-1">{c.address}</p>
                   </div>
                 </div>
                 <button onClick={e => { e.stopPropagation(); handleUpvote(c.id); }}

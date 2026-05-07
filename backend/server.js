@@ -9,6 +9,7 @@ import cors from "cors";
 
 import complaintsRouter from "./routes/complaints.js";
 import departmentsRouter from "./routes/departments.js";
+import statsRouter from "./routes/stats.js";
 import usersRouter from "./routes/users.js";
 import aiRouter from "./routes/ai.js";
 import whatsappRouter from "./routes/whatsapp.js";
@@ -41,6 +42,7 @@ app.use((req, _res, next) => {
 // ── Routing ───────────────────────────────────────────────
 app.use("/api", complaintsRouter); // POST /api/report  GET /api/feed etc.
 //app.use('/api/complaints', complaintsRouter);   // alias + GET /api/complaints/search
+app.use("/api/stats", statsRouter);
 app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/ai", aiRouter); // POST /api/ai/ask  GET /api/ai/similar
@@ -85,6 +87,7 @@ app.get("/api", (_req, res) => {
       upvote: "PATCH /api/feed/:id/upvote",
       update_status: "PATCH /api/feed/:id/status { status }",
       city_stats: "GET  /api/stats",
+      ward_stats: "GET  /api/stats/wards",
       departments: "GET  /api/departments",
       department: "GET  /api/departments/:id",
       register: "POST /api/users/register",
