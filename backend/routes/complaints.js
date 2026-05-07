@@ -510,12 +510,30 @@ router.get("/feed", async (req, res) => {
 
     const { rows } = await query(
       `
-      SELECT p.id, p.category, p.ward, p.summary,
+      SELECT p.id, p.title, p.category, p.ward, p.summary,
              p.status, p.severity, p."upvoteCount", p."priorityScore",
              p.lat, p.lng, p.address, p."createdAt",
-             d.short AS dept_short, d.name AS dept_name
+             d.short AS dept_short, d.name AS dept_name,
+             cp.photo_url, cp.photos
       FROM problems p
       LEFT JOIN departments d ON d.id = p.department_id
+      LEFT JOIN LATERAL (
+        SELECT latest.photo_url,
+               all_photos.photos
+        FROM (
+          SELECT c."photoPath" AS photo_url
+          FROM complaints c
+          WHERE c.problem_id = p.id
+            AND c."photoPath" IS NOT NULL
+          ORDER BY c."createdAt" DESC
+          LIMIT 1
+        ) latest
+        FULL OUTER JOIN (
+          SELECT array_remove(array_agg(DISTINCT c."photoPath"), NULL) AS photos
+          FROM complaints c
+          WHERE c.problem_id = p.id
+        ) all_photos ON TRUE
+      ) cp ON TRUE
       WHERE ${conditions.join(" AND ")}
       ORDER BY p."priorityScore" DESC, p."createdAt" DESC
       LIMIT $${p++} OFFSET $${p++}
@@ -523,7 +541,12 @@ router.get("/feed", async (req, res) => {
       params,
     );
 
-    res.json({ success: true, total: rows.length, data: rows });
+    const data = rows.map((row) => ({
+      ...row,
+      photos: Array.isArray(row.photos) ? row.photos : [],
+    }));
+
+    res.json({ success: true, total: data.length, data });
   } catch (err) {
     console.error("[FEED ERROR]", err);
     res.status(500).json({ error: err.message });
