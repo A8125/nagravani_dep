@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Camera, CheckCircle, Loader2, Upload, X, ThumbsUp, Link as LinkIcon } from 'lucide-react';
 import { raiseComplaint } from '../lib/api';
 import { useApp } from '../context/AppContext';
+import { hasSupabaseClientConfig, uploadComplaintPhoto } from '../lib/supabase';
 
 // Ward options for Mandya
 const WARDS = [
@@ -90,10 +91,21 @@ export default function ComplaintPortal() {
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setError('');
+
+    if (!file) {
+      removePhoto();
+      return;
+    }
+
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setError(isKannada ? 'ಚಿತ್ರದ ಗಾತ್ರ 5MB ಗಿಂತ ಹೆಚ್ಚಿರಬಾರದು' : 'Photo must be under 5MB');
+        if (fileRef.current) fileRef.current.value = '';
         return;
+      }
+      if (photoPreview) {
+        URL.revokeObjectURL(photoPreview);
       }
       setPhoto(file);
       setPhotoPreview(URL.createObjectURL(file));
@@ -101,6 +113,9 @@ export default function ComplaintPortal() {
   };
 
   const removePhoto = () => {
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+    }
     setPhoto(null);
     setPhotoPreview(null);
     if (fileRef.current) fileRef.current.value = '';
@@ -140,6 +155,11 @@ export default function ComplaintPortal() {
     }
 
     try {
+      let photoUrl: string | null = null;
+      if (photo && hasSupabaseClientConfig) {
+        photoUrl = await uploadComplaintPhoto(photo);
+      }
+
       const fd = new FormData();
       fd.append('title', form.title);
       fd.append('description', form.description);
@@ -148,7 +168,8 @@ export default function ComplaintPortal() {
       fd.append('severity', form.severity);
       if (lat)       fd.append('lat', String(lat));
       if (lng) fd.append('lng', String(lng));
-      if (photo) fd.append('photo', photo);
+      if (photoUrl) fd.append('photo_url', photoUrl);
+      if (photo && !photoUrl) fd.append('photo', photo);
       fd.append('citizen_name', citizenName);
       fd.append('aadhaar', aadhaarRaw);
 
@@ -166,8 +187,7 @@ export default function ComplaintPortal() {
     setStep(0);
     setLat(null);
     setLng(null);
-    setPhoto(null);
-    setPhotoPreview(null);
+    removePhoto();
     setForm({ title: '', description: '', category: '', ward: '', severity: 'Medium' });
     setCitizenName('');
     setAadhaarRaw('');
@@ -389,7 +409,7 @@ export default function ComplaintPortal() {
                 <div>
                   <label className="block text-xs font-medium text-stone uppercase tracking-wide mb-3">
                     <Camera className="w-4 h-4 inline mr-1" />
-                    {isKannada ? 'ಫೋಟೋ' : 'Photo'} <span className="text-stone/60">({isKannada ? 'ಐಚ್ಛಿಕ, ಗರಿಷ್ಠ 5MB' : 'optional, max 5MB'})</span>
+                    {isKannada ? 'ಫೋಟೋ ಲಗತ್ತಿಸಿ' : 'Attach a photo (optional)'} <span className="text-stone/60">({isKannada ? 'ಗರಿಷ್ಠ 5MB' : 'max 5MB'})</span>
                   </label>
 
                   {photoPreview ? (

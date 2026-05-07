@@ -14,6 +14,8 @@ export interface Complaint {
   title: string;
   description?: string;
   summary?: string;
+  photo_url?: string | null;
+  photos?: string[];
   category: string;
   ward: string;
   photoPath?: string;

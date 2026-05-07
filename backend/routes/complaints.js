@@ -4,14 +4,17 @@ import multer from "multer";
 import { v4 as uuid } from "uuid";
 import { query } from "../db.js";
 import { embed, toVectorLiteral } from "../embeddings.js";
-import { createHash } from 'crypto';
-import { generateComplaintId } from '../lib/generateComplaintId.js';
-import { createClient } from '@supabase/supabase-js';
+import { createHash } from "crypto";
+import { generateComplaintId } from "../lib/generateComplaintId.js";
+import { createClient } from "@supabase/supabase-js";
 
 const router = Router();
 
 // ── Initialize Supabase client ─────────────────────────────
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY,
+);
 
 // ── Constants ─────────────────────────────────────────────
 const VALID_CATEGORIES = [
@@ -25,45 +28,55 @@ const VALID_CATEGORIES = [
 ];
 
 const CATEGORY_TO_DEPT_ID = {
-  road:         '4532bd59-eb0a-4c05-bace-9ee210ee0078',
-  water:        '11e1918e-7c31-4be6-9b2f-374449e4e0ee',
-  streetlight:  '3737a8b7-3fb2-40e2-a687-534afd04439b',
-  garbage:      '11e1918e-7c31-4be6-9b2f-374449e4e0ee',
-  sewage:       '11e1918e-7c31-4be6-9b2f-374449e4e0ee',
-  noise:        '9d6c4f8f-6f4e-4a9f-a9ec-c8d3fe63833b',
-  encroachment: '892f379f-538b-457d-ad3c-d06259edb4cb',
+  road: "4532bd59-eb0a-4c05-bace-9ee210ee0078",
+  water: "11e1918e-7c31-4be6-9b2f-374449e4e0ee",
+  streetlight: "3737a8b7-3fb2-40e2-a687-534afd04439b",
+  garbage: "11e1918e-7c31-4be6-9b2f-374449e4e0ee",
+  sewage: "11e1918e-7c31-4be6-9b2f-374449e4e0ee",
+  noise: "9d6c4f8f-6f4e-4a9f-a9ec-c8d3fe63833b",
+  encroachment: "892f379f-538b-457d-ad3c-d06259edb4cb",
 };
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
 // ── Severity: keyword matching only (no LLM) ──────────────
 function quickSeverity(description) {
   const t = description.toLowerCase();
-  if (/accident|injur|death|collapse|fire|flood|emergency|fatal/.test(t)) return 'Critical';
-  if (/dangerous|broken|blocked|burst|leak|unsafe|overflow/.test(t))      return 'High';
-  if (/damage|pothole|missing|dirty|smell|not working/.test(t))            return 'Medium';
-  return 'Low';
+  if (/accident|injur|death|collapse|fire|flood|emergency|fatal/.test(t))
+    return "Critical";
+  if (/dangerous|broken|blocked|burst|leak|unsafe|overflow/.test(t))
+    return "High";
+  if (/damage|pothole|missing|dirty|smell|not working/.test(t)) return "Medium";
+  return "Low";
 }
 
 // ── Priority score ────────────────────────────────────────
 function calcPriorityScore(upvoteCount, createdAt) {
-  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+  const days = Math.floor(
+    (Date.now() - new Date(createdAt).getTime()) / 86400000,
+  );
   return upvoteCount * 10 + days * 2;
 }
 
 // ── Text normalization for duplicate detection ───────────
 function normalizeText(text) {
-  if (!text) return '';
+  if (!text) return "";
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s]/g, ' ')  // Replace punctuation with spaces
-    .replace(/\s+/g, ' ');        // Normalize multiple spaces to single space
+    .replace(/[^\w\s]/g, " ") // Replace punctuation with spaces
+    .replace(/\s+/g, " "); // Normalize multiple spaces to single space
 }
 
 // ── Enhanced duplicate detection with vector + pg_trgm ────
 // Vector similarity > 0.75 → definite match
 // Vector similarity 0.60–0.75 → run pg_trgm as tiebreaker
 // Vector similarity < 0.60 → new problem
-async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, ward) {
+async function findDuplicateProblem(
+  vectorLiteral,
+  normalizedTitle,
+  category,
+  ward,
+) {
   // Stage 1: Vector similarity search (> 0.60 to catch borderline cases)
   const { rows: candidates } = await query(
     `
@@ -78,7 +91,7 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
     ORDER BY embedding <=> $1::vector
     LIMIT 5
     `,
-    [vectorLiteral, category, ward]
+    [vectorLiteral, category, ward],
   );
 
   if (candidates.length === 0) {
@@ -90,22 +103,26 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
 
   // Definite match: vector similarity > 0.75
   if (vectorSim > 0.75) {
-    console.log(`[DEDUP] Definite match (vector: ${Math.round(vectorSim * 100)}%)`);
+    console.log(
+      `[DEDUP] Definite match (vector: ${Math.round(vectorSim * 100)}%)`,
+    );
     return bestMatch;
   }
 
   // Borderline: vector similarity 0.60-0.75, use pg_trgm as tiebreaker
-  if (vectorSim >= 0.60) {
-    console.log(`[DEDUP] Borderline match (vector: ${Math.round(vectorSim * 100)}%), checking pg_trgm...`);
+  if (vectorSim >= 0.6) {
+    console.log(
+      `[DEDUP] Borderline match (vector: ${Math.round(vectorSim * 100)}%), checking pg_trgm...`,
+    );
 
     // Check pg_trgm similarity with the best candidate
     const { rows: trgmResult } = await query(
       `
-      SELECT 
+      SELECT
         similarity($1, $2) AS title_similarity,
         word_similarity($1, $2) AS word_sim
       `,
-      [normalizedTitle, normalizeText(bestMatch.title)]
+      [normalizedTitle, normalizeText(bestMatch.title)],
     );
 
     const titleSim = trgmResult[0]?.title_similarity || 0;
@@ -127,24 +144,31 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
       const candidate = candidates[i];
       const { rows: trgmCheck } = await query(
         `
-        SELECT 
+        SELECT
           similarity($1, $2) AS title_similarity,
           word_similarity($1, $2) AS word_sim
         `,
-        [normalizedTitle, normalizeText(candidate.title)]
+        [normalizedTitle, normalizeText(candidate.title)],
       );
 
-      const checkSim = Math.max(trgmCheck[0]?.title_similarity || 0, trgmCheck[0]?.word_sim || 0);
+      const checkSim = Math.max(
+        trgmCheck[0]?.title_similarity || 0,
+        trgmCheck[0]?.word_sim || 0,
+      );
 
       if (checkSim >= 0.5) {
-        console.log(`[DEDUP] Match found with candidate ${i} (pg_trgm: ${Math.round(checkSim * 100)}%)`);
+        console.log(
+          `[DEDUP] Match found with candidate ${i} (pg_trgm: ${Math.round(checkSim * 100)}%)`,
+        );
         return candidate;
       }
     }
   }
 
   // No match found
-  console.log(`[DEDUP] No match (best vector: ${Math.round(vectorSim * 100)}%)`);
+  console.log(
+    `[DEDUP] No match (best vector: ${Math.round(vectorSim * 100)}%)`,
+  );
   return null;
 }
 
@@ -152,12 +176,15 @@ async function findDuplicateProblem(vectorLiteral, normalizedTitle, category, wa
 async function regenerateSummary(problemId) {
   const { rows } = await query(
     'SELECT description FROM complaints WHERE problem_id = $1 ORDER BY "createdAt" ASC',
-    [problemId]
+    [problemId],
   );
 
   const descriptions = rows
     .map((row) => row.description)
-    .filter((description) => typeof description === "string" && description.trim().length > 0);
+    .filter(
+      (description) =>
+        typeof description === "string" && description.trim().length > 0,
+    );
 
   if (descriptions.length === 0) return null;
 
@@ -174,26 +201,28 @@ async function generateSummary(descriptions) {
   const prompt = `You are a civic complaint summarizer for Mandya city.
 Multiple citizens have reported the same issue. Here are their descriptions:
 
-${cleanedDescriptions.map((d, i) => `Citizen ${i + 1}: "${d}"`).join('\n')}
+${cleanedDescriptions.map((d, i) => `Citizen ${i + 1}: "${d}"`).join("\n")}
 
 Write a single sentence summary of this civic issue. Be specific about the problem and location. No fluff, no filler phrases.`;
 
-  const response = await fetch('http://localhost:11434/api/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: 'llama3.2:3b',
+      model: "llama3.2:3b",
       prompt,
       stream: false,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Ollama summary generation failed with status ${response.status}`);
+    throw new Error(
+      `Ollama summary generation failed with status ${response.status}`,
+    );
   }
 
   const data = await response.json();
-  return String(data.response || '').trim();
+  return String(data.response || "").trim();
 }
 
 // ── File upload (memory storage) ───────────────────────────
@@ -248,16 +277,22 @@ router.post("/report", upload.single("photo"), async (req, res) => {
         .status(400)
         .json({ error: "title, category, description, ward are required" });
     if (!VALID_CATEGORIES.includes(category))
+      return res.status(400).json({
+        error: `category must be one of: ${VALID_CATEGORIES.join(", ")}`,
+      });
+    if (
+      !citizen_name ||
+      citizen_name.trim().length === 0 ||
+      citizen_name.length > 100
+    ) {
       return res
         .status(400)
-        .json({
-          error: `category must be one of: ${VALID_CATEGORIES.join(", ")}`,
-        });
-    if (!citizen_name || citizen_name.trim().length === 0 || citizen_name.length > 100) {
-      return res.status(400).json({ error: 'citizen_name is required (max 100 chars)' });
+        .json({ error: "citizen_name is required (max 100 chars)" });
     }
     if (!aadhaar || !/^[0-9]{12}$/.test(aadhaar)) {
-      return res.status(400).json({ error: 'aadhaar must be exactly 12 digits' });
+      return res
+        .status(400)
+        .json({ error: "aadhaar must be exactly 12 digits" });
     }
 
     // 1. Embed (graceful fallback if Ollama unavailable)
@@ -269,7 +304,9 @@ router.post("/report", upload.single("photo"), async (req, res) => {
         vectorLiteral = toVectorLiteral(embedding);
         console.log("[2] embed done");
       } else {
-        console.log("[2] embed skipped (Ollama unavailable), proceeding without embeddings");
+        console.log(
+          "[2] embed skipped (Ollama unavailable), proceeding without embeddings",
+        );
       }
     } catch (err) {
       console.warn("[2] embed failed:", err.message);
@@ -280,8 +317,13 @@ router.post("/report", upload.single("photo"), async (req, res) => {
     if (vectorLiteral) {
       console.log("[3] dedup query against problems...");
       const normalizedTitle = normalizeText(title);
-      problemMatch = await findDuplicateProblem(vectorLiteral, normalizedTitle, category, ward);
-      console.log("[3] dedup done, match found:", problemMatch ? 'yes' : 'no');
+      problemMatch = await findDuplicateProblem(
+        vectorLiteral,
+        normalizedTitle,
+        category,
+        ward,
+      );
+      console.log("[3] dedup done, match found:", problemMatch ? "yes" : "no");
     } else {
       console.log("[3] dedup skipped (no embedding)");
     }
@@ -299,11 +341,11 @@ router.post("/report", upload.single("photo"), async (req, res) => {
     if (req.file) {
       const filename = `${Date.now()}-${req.file.originalname}`;
       const { error } = await supabase.storage
-        .from('complaint-photos')
+        .from("complaint-photos")
         .upload(filename, req.file.buffer, { contentType: req.file.mimetype });
 
       if (error) {
-        console.error('[UPLOAD ERROR]', error);
+        console.error("[UPLOAD ERROR]", error);
         throw new Error(`Failed to upload photo: ${error.message}`);
       }
 
@@ -312,16 +354,16 @@ router.post("/report", upload.single("photo"), async (req, res) => {
     }
 
     // Hash Aadhaar
-    const aadhaarHash = createHash('sha256').update(aadhaar).digest('hex');
+    const aadhaarHash = createHash("sha256").update(aadhaar).digest("hex");
     const aadhaarLast4 = aadhaar.slice(-4);
 
     // Generate complaint ID
     const DEPT_ID_TO_SHORT = {
-      '4532bd59-eb0a-4c05-bace-9ee210ee0078': 'PWD',
-      '11e1918e-7c31-4be6-9b2f-374449e4e0ee': 'CMC',
-      '3737a8b7-3fb2-40e2-a687-534afd04439b': 'CESC',
-      '892f379f-538b-457d-ad3c-d06259edb4cb': 'MUDA',
-      '9d6c4f8f-6f4e-4a9f-a9ec-c8d3fe63833b': 'DHO',
+      "4532bd59-eb0a-4c05-bace-9ee210ee0078": "PWD",
+      "11e1918e-7c31-4be6-9b2f-374449e4e0ee": "CMC",
+      "3737a8b7-3fb2-40e2-a687-534afd04439b": "CESC",
+      "892f379f-538b-457d-ad3c-d06259edb4cb": "MUDA",
+      "9d6c4f8f-6f4e-4a9f-a9ec-c8d3fe63833b": "DHO",
     };
     const deptShort = DEPT_ID_TO_SHORT[deptId];
     const complaintId = await generateComplaintId(deptShort);
@@ -430,30 +472,30 @@ router.post("/report", upload.single("photo"), async (req, res) => {
        RETURNING *
     `,
       [
-         complaintId,
-         title,
-         category,
-         description,
-         ward,
-         photoUrl,
-         latVal,
-         lngVal,
-         ward,
-         severity,
-         vectorLiteral,
-         deptId,
-         problemId,
-         citizen_name.trim(),
-         aadhaarHash,
-         aadhaarLast4,
-         source,
-         whatsapp_number,
-       ],
+        complaintId,
+        title,
+        category,
+        description,
+        ward,
+        photoUrl,
+        latVal,
+        lngVal,
+        ward,
+        severity,
+        vectorLiteral,
+        deptId,
+        problemId,
+        citizen_name.trim(),
+        aadhaarHash,
+        aadhaarLast4,
+        source,
+        whatsapp_number,
+      ],
     );
 
     // Fetch the newly created problem
     const { rows: problemRows } = await query(
-      'SELECT * FROM problems WHERE id = $1',
+      "SELECT * FROM problems WHERE id = $1",
       [problemId],
     );
 
@@ -580,7 +622,11 @@ router.get("/feed/:id", async (req, res) => {
       [req.params.id],
     );
 
-    res.json({ success: true, problem: problemRows[0], complaints: complaintRows });
+    res.json({
+      success: true,
+      problem: problemRows[0],
+      complaints: complaintRows,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -599,7 +645,8 @@ router.get("/complaints/:id", async (req, res) => {
     `,
       [req.params.id],
     );
-    if (!complaintRows[0]) return res.status(404).json({ error: "Complaint not found" });
+    if (!complaintRows[0])
+      return res.status(404).json({ error: "Complaint not found" });
 
     const complaint = complaintRows[0];
     const problemId = complaint.problem_id;

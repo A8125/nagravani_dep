@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getFeed, type Complaint } from '../lib/api';
-import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight } from 'lucide-react';
+import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 
@@ -33,10 +33,23 @@ export default function CommunityFeed() {
   const [cat, setCat]         = useState('All');
   const [status, setStatus]   = useState('All');
   const [dept, setDept]       = useState('All');
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
 
   useEffect(() => {
     getFeed().then(r => { setAll(r.data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!lightboxUrl) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLightboxUrl(null);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [lightboxUrl]);
 
   useEffect(() => {
     let r = all;
@@ -56,6 +69,22 @@ export default function CommunityFeed() {
     if (!dt) return '?';
     const d = Math.floor((Date.now() - new Date(dt).getTime()) / 86400000);
     return d === 0 ? 'Today' : `${d}d ago`;
+  };
+
+  const getPhotos = (problem: Complaint) => {
+    if (problem.photos && problem.photos.length > 0) return problem.photos;
+    if (problem.photo_url) return [problem.photo_url];
+    return [];
+  };
+
+  const cyclePhoto = (problemId: string, total: number, direction: 1 | -1) => {
+    setPhotoIndexes((prev) => {
+      const current = prev[problemId] ?? 0;
+      return {
+        ...prev,
+        [problemId]: (current + direction + total) % total,
+      };
+    });
   };
 
   return (
@@ -130,6 +159,9 @@ export default function CommunityFeed() {
         <div className="space-y-4">
           {shown.map((p, i) => {
             const IconComp = CAT_ICON[p.category] || MapPin;
+            const photos = getPhotos(p);
+            const activeIndex = photos.length > 0 ? (photoIndexes[p.id] ?? 0) % photos.length : 0;
+            const activePhoto = photos[activeIndex] ?? null;
             return (
               <motion.div key={p.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -156,6 +188,70 @@ export default function CommunityFeed() {
                      <p className="mb-2 text-[14px] text-stone/85 line-clamp-2">
                       {p.summary || p.description || 'No summary available yet.'}
                      </p>
+                     {photos.length === 1 && activePhoto && (
+                       <button
+                         type="button"
+                         onClick={(event) => {
+                           event.stopPropagation();
+                           setLightboxUrl(activePhoto);
+                         }}
+                         className="mb-3 block w-full overflow-hidden rounded-2xl"
+                       >
+                         <img
+                           src={activePhoto}
+                           alt={p.title || 'Complaint photo'}
+                           className="h-auto w-full object-contain"
+                         />
+                       </button>
+                     )}
+                     {photos.length > 1 && activePhoto && (
+                       <div className="group relative mb-3 w-full overflow-hidden rounded-2xl">
+                         <button
+                           type="button"
+                           onClick={(event) => {
+                             event.stopPropagation();
+                             setLightboxUrl(activePhoto);
+                           }}
+                           className="block w-full"
+                         >
+                           <img
+                             src={activePhoto}
+                             alt={p.title || 'Complaint photo'}
+                             className="h-auto w-full object-contain"
+                           />
+                         </button>
+                         <button
+                           type="button"
+                           onClick={(event) => {
+                             event.stopPropagation();
+                             cyclePhoto(p.id, photos.length, -1);
+                           }}
+                           className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                           aria-label="Previous photo"
+                         >
+                           <ChevronLeft className="h-4 w-4" />
+                         </button>
+                         <button
+                           type="button"
+                           onClick={(event) => {
+                             event.stopPropagation();
+                             cyclePhoto(p.id, photos.length, 1);
+                           }}
+                           className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                           aria-label="Next photo"
+                         >
+                           <ChevronRight className="h-4 w-4" />
+                         </button>
+                         <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/35 px-2 py-1">
+                           {photos.map((photo, index) => (
+                             <span
+                               key={`${p.id}-${photo}-${index}`}
+                               className={`h-2 w-2 rounded-full ${index === activeIndex ? 'bg-white' : 'bg-white/40'}`}
+                             />
+                           ))}
+                         </div>
+                       </div>
+                     )}
                      <div className="flex items-center gap-1 text-xs text-stone mb-3">
                       <MapPin className="w-3 h-3" /> {p.ward}{p.address ? ` • ${p.address}` : ''}
                     </div>
@@ -177,6 +273,20 @@ export default function CommunityFeed() {
           })}
         </div>
       </div>
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            alt="Complaint full size"
+            className="max-h-[85vh] max-w-[90vw] object-contain"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
