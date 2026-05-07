@@ -1,4 +1,12 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const isLocalDevHost =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+const BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined"
+    ? (isLocalDevHost ? "http://localhost:3000" : window.location.origin)
+    : "http://localhost:3000");
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -53,6 +61,23 @@ export interface WardStat {
   severity?: string | null;
 }
 
+export interface ComplaintSubmissionResult {
+  success: boolean;
+  merged: boolean;
+  complaint?: Record<string, unknown>;
+  problem?: Record<string, unknown>;
+  message?: string;
+}
+
+export interface GarbageSchedule {
+  id: string | number;
+  ward: string;
+  collection_days: string[];
+  time_slot: string;
+  vehicle_number: string;
+  updated_at: string;
+}
+
 export function getStats() {
   return req<{
     success: boolean;
@@ -105,13 +130,7 @@ export function updateStatus(id: string, status: string) {
 export async function raiseComplaint(data: FormData) {
   const res = await fetch(`${BASE}/api/report`, { method: "POST", body: data });
   if (!res.ok) throw new Error(`API error ${res.status}`);
-  return res.json() as Promise<{
-    success: boolean;
-    merged: boolean;
-    complaint?: any;
-    problem?: any;
-    message?: string;
-  }>;
+  return res.json() as Promise<ComplaintSubmissionResult>;
 }
 
 export function getDepartments() {
@@ -120,6 +139,35 @@ export function getDepartments() {
 
 export function getDepartment(id: string) {
   return req<{ success: boolean; data: Department }>(`/api/departments/${id}`);
+}
+
+export function getGarbageSchedules() {
+  return req<{ success: boolean; data: GarbageSchedule[] }>("/api/garbage/schedules");
+}
+
+export function getGarbageSchedule(ward: string) {
+  return req<{ success: boolean; data: GarbageSchedule }>(
+    `/api/garbage/schedule/${encodeURIComponent(ward)}`,
+  );
+}
+
+export function getGarbageMissedCount(ward: string) {
+  return req<{ success: boolean; ward: string; date: string; count: number }>(
+    `/api/garbage/missed/${encodeURIComponent(ward)}`,
+  );
+}
+
+export function reportGarbageMissed(data: { ward: string; aadhaar_last4: string }) {
+  return req<{
+    success: boolean;
+    ward: string;
+    date: string;
+    count: number;
+    auto_complaint_raised: boolean;
+  }>("/api/garbage/missed", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 export function registerUser(data: {

@@ -13,6 +13,7 @@ import statsRouter from "./routes/stats.js";
 import usersRouter from "./routes/users.js";
 import aiRouter from "./routes/ai.js";
 import whatsappRouter from "./routes/whatsapp.js";
+import garbageRouter from "./routes/garbage.js";
 import { dbHealthCheck } from "./db.js";
 
 const PORT = process.env.PORT || 3000;
@@ -47,6 +48,7 @@ app.use("/api/departments", departmentsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/ai", aiRouter); // POST /api/ai/ask  GET /api/ai/similar
 app.use("/api/whatsapp", whatsappRouter);
+app.use("/api/garbage", garbageRouter);
 
 // ── Health check ──────────────────────────────────────────
 app.get("/health", async (_req, res) => {
@@ -99,6 +101,10 @@ app.get("/api", (_req, res) => {
       ai_translate: "POST /api/ai/translate",
       ai_whatsapp: "POST /api/ai/whatsapp",
       ai_faq: "GET  /api/ai/faq",
+      garbage_schedules: "GET  /api/garbage/schedules",
+      garbage_schedule: "GET  /api/garbage/schedule/:ward",
+      garbage_missed_count: "GET  /api/garbage/missed/:ward",
+      garbage_missed_report: "POST /api/garbage/missed { ward, aadhaar_last4 }",
     },
   });
 });

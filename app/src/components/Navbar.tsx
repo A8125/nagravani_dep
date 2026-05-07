@@ -15,6 +15,7 @@ export function Navbar() {
     ? [
         { name: 'ನಕ್ಷೆ',        href: '/map' },
         { name: 'ದೂರು',         href: '/raise' },
+        { name: 'ಕಸ',           href: '/garbage' },
         { name: 'ಇಲಾಖೆ',        href: '/departments' },
         { name: 'ಫೀಡ್',         href: '/feed' },
         { name: 'AI ಸಹಾಯ',      href: '/ai' },
@@ -22,6 +23,7 @@ export function Navbar() {
     : [
         { name: 'Map',           href: '/map' },
         { name: 'Complaints',    href: '/raise' },
+        { name: 'Garbage',       href: '/garbage' },
         { name: 'Departments',   href: '/departments' },
         { name: 'Feed',          href: '/feed' },
         { name: 'AI Help',       href: '/ai' },

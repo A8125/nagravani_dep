@@ -14,6 +14,7 @@ import DepartmentDirectory from '@/pages/DepartmentDirectory';
 import AIHelpDesk from '@/pages/AIHelpDesk';
 import CitizenDashboard from '@/pages/CitizenDashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
+import GarbageTracker from '@/pages/GarbageTracker';
 import { AppProvider } from '@/context/AppContext';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
@@ -100,6 +101,7 @@ function App() {
             <Route path="/map"          element={<MapPage />} />
             <Route path="/raise"        element={<ComplaintPortal />} />
             <Route path="/feed"         element={<CommunityFeed />} />
+            <Route path="/garbage"      element={<GarbageTracker />} />
             <Route path="/departments"  element={<DepartmentDirectory />} />
             <Route path="/ai"           element={<AIHelpDesk />} />
             <Route path="/profile"      element={<CitizenDashboard />} />
