@@ -2,12 +2,12 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 
 const departments = [
-  'TMC (City Council)',
-  'BESCOM (Power)',
+  'CMC (City Municipal Council)',
+  'CESC (Chamundeshwari Electricity Supply)',
   'PWD (Roads)',
-  'BWSSB (Water)',
-  'Health Department',
-  'Traffic Police',
+  'KUWS&DB (Karnataka Urban Water)',
+  'DHO (District Health Office)',
+  'Mandya Traffic Police',
 ];
 
 const containerVariants = {

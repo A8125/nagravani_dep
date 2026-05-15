@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getDepartments, type Department } from '../lib/api';
-import { Phone, MapPin, Briefcase, ExternalLink, Landmark, Zap, HardHat, Map, Stethoscope, Building2 } from 'lucide-react';
+import { getDepartments, getDepartmentStats, type Department, type DepartmentStats } from '../lib/api';
+import { Phone, MapPin, Briefcase, ExternalLink, Landmark, Zap, HardHat, Map as MapIcon, Stethoscope, Building2, Droplets } from 'lucide-react';
 
 const DEPT_COLORS: Record<string, string> = {
   CMC: '#0f172a',    // slate-900
   CESC: '#b45309',   // amber-700
   PWD: '#334155',    // slate-700
+  'KUWS&DB': '#2563eb',
   MUDA: '#0284c7',   // sky-600
   DHO: '#059669',    // emerald-600
 };
@@ -16,19 +17,63 @@ const getDeptIcon = (short: string) => {
     case 'CMC': return <Landmark className="w-6 h-6" />;
     case 'CESC': return <Zap className="w-6 h-6" />;
     case 'PWD': return <HardHat className="w-6 h-6" />;
-    case 'MUDA': return <Map className="w-6 h-6" />;
+    case 'KUWS&DB': return <Droplets className="w-6 h-6" />;
+    case 'MUDA': return <MapIcon className="w-6 h-6" />;
     case 'DHO': return <Stethoscope className="w-6 h-6" />;
     default: return <Building2 className="w-6 h-6" />;
   }
 };
 
+type DepartmentWithStats = Department & {
+  stats: DepartmentStats;
+};
+
+const EMPTY_STATS: DepartmentStats = {
+  department: '',
+  name: '',
+  open_cases: 0,
+  resolved_cases: 0,
+  total_cases: 0,
+};
+
+function SkeletonCard() {
+  return (
+    <div className="rounded-xl border border-stone-200 bg-white p-6">
+      <div className="mb-5 flex items-start justify-between">
+        <div className="h-12 w-12 animate-pulse rounded-lg bg-stone-200" />
+        <div className="text-right">
+          <div className="mb-2 h-3 w-20 animate-pulse rounded bg-stone-200" />
+          <div className="h-8 w-12 animate-pulse rounded bg-stone-200" />
+        </div>
+      </div>
+      <div className="mb-2 h-6 w-3/4 animate-pulse rounded bg-stone-200" />
+      <div className="mb-5 h-8 w-full animate-pulse rounded bg-stone-200" />
+      <div className="mb-4 h-2 w-full animate-pulse rounded-full bg-stone-200" />
+      <div className="space-y-2.5 border-t border-stone-100 pt-4">
+        <div className="h-4 w-2/3 animate-pulse rounded bg-stone-200" />
+        <div className="h-4 w-1/2 animate-pulse rounded bg-stone-200" />
+      </div>
+    </div>
+  );
+}
+
 export default function DepartmentDirectory() {
-  const [depts, setDepts] = useState<Department[]>([]);
+  const [depts, setDepts] = useState<DepartmentWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<Department | null>(null);
+  const [selected, setSelected] = useState<DepartmentWithStats | null>(null);
 
   useEffect(() => {
-    getDepartments().then(r => { setDepts(r.data); setLoading(false); }).catch(() => setLoading(false));
+    Promise.all([getDepartments(), getDepartmentStats()])
+      .then(([deptRes, statsRes]) => {
+        const statsMap = new Map(statsRes.data.map((stat) => [stat.department, stat]));
+        const merged = deptRes.data.map((dept) => ({
+          ...dept,
+          stats: statsMap.get(dept.short) || { ...EMPTY_STATS, department: dept.short, name: dept.name },
+        }));
+        setDepts(merged);
+      })
+      .catch(() => setDepts([]))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -40,14 +85,20 @@ export default function DepartmentDirectory() {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonCard key={index} />
+            ))}
           </div>
         )}
 
+        {!loading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {depts.map((dept, i) => {
             const color = DEPT_COLORS[dept.short] || '#475569';
+            const resolutionRate = dept.stats.total_cases
+              ? Math.round((dept.stats.resolved_cases / dept.stats.total_cases) * 100)
+              : 0;
             return (
               <motion.div key={dept.id}
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -60,12 +111,28 @@ export default function DepartmentDirectory() {
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Active Cases</div>
-                    <div className="text-2xl font-bold text-slate-800">{dept.active_complaints}</div>
+                    <div className="text-2xl font-bold text-slate-800">{dept.stats.open_cases}</div>
                   </div>
                 </div>
                 
                 <h3 className="font-semibold text-slate-800 mb-1 line-clamp-1">{dept.name}</h3>
                 <p className="text-xs text-stone-500 mb-5 line-clamp-2 min-h-[32px]">{dept.scope}</p>
+
+                <div className="mb-5 rounded-lg border border-stone-100 bg-stone-50 p-3">
+                  <div className="mb-2 flex items-center justify-between text-[11px] font-medium text-stone-500">
+                    <span>Resolved</span>
+                    <span>{dept.stats.resolved_cases} / {dept.stats.total_cases}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${resolutionRate}%`, background: color }}
+                    />
+                  </div>
+                  <div className="mt-2 text-[11px] font-medium text-stone-500">
+                    Resolution rate: <span className="text-slate-700">{resolutionRate}%</span>
+                  </div>
+                </div>
 
                 <div className="space-y-2.5 border-t border-stone-100 pt-4">
                   <div className="flex items-center gap-2.5 text-xs text-stone-600 font-medium">
@@ -92,6 +159,7 @@ export default function DepartmentDirectory() {
             );
           })}
         </div>
+        )}
 
         {selected && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -125,8 +193,28 @@ export default function DepartmentDirectory() {
                   <div className="bg-stone-50 rounded-lg border border-stone-100 p-4">
                     <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Open Cases</div>
                     <div className="text-xl font-bold text-slate-800">
-                      {selected.active_complaints}
+                      {selected.stats.open_cases}
                     </div>
+                  </div>
+                </div>
+                <div className="bg-stone-50 rounded-lg border border-stone-100 p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Resolution Rate</div>
+                    <div className="text-sm font-semibold text-slate-700">
+                      {selected.stats.total_cases ? Math.round((selected.stats.resolved_cases / selected.stats.total_cases) * 100) : 0}%
+                    </div>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${selected.stats.total_cases ? Math.round((selected.stats.resolved_cases / selected.stats.total_cases) * 100) : 0}%`,
+                        background: DEPT_COLORS[selected.short] || '#475569',
+                      }}
+                    />
+                  </div>
+                  <div className="mt-2 text-xs text-stone-500">
+                    Resolved {selected.stats.resolved_cases} of {selected.stats.total_cases} total cases
                   </div>
                 </div>
                 <div className="bg-stone-50 rounded-lg border border-stone-100 p-4 space-y-3">

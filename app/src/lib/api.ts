@@ -68,9 +68,17 @@ export interface Department {
   officer_name: string;
   officer_phone: string;
   office_address: string;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
   active_complaints: number;
+}
+
+export interface DepartmentStats {
+  department: string;
+  name: string;
+  open_cases: number;
+  resolved_cases: number;
+  total_cases: number;
 }
 
 export interface WardStat {
@@ -189,6 +197,10 @@ export function getDepartments() {
 
 export function getDepartment(id: string) {
   return req<{ success: boolean; data: Department }>(`/api/departments/${id}`);
+}
+
+export function getDepartmentStats() {
+  return req<{ success: boolean; data: DepartmentStats[] }>("/api/departments/stats");
 }
 
 export function getGarbageSchedules() {

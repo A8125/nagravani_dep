@@ -32,7 +32,7 @@ export function FeaturesSection() {
 
   const features = [
     { icon: MapPin,          title: lang === 'kn' ? 'ನಕ್ಷೆ ಇಂಟರ್‌ಫೇಸ್' : 'Map Interface',           description: lang === 'kn' ? 'ಮಂಡ್ಯದಾದ್ಯಂತ ಸಕ್ರಿಯ ಸಮಸ್ಯೆಗಳನ್ನು (ಗುಂಡಿ, ನೀರು, ವಿದ್ಯುತ್) ತೋರಿಸುವ ಇಂಟರಾಕ್ಟಿವ್ ಪಿನ್‌ಗಳು.' : 'Interactive pins showing active issues (Potholes, Water leaks, Power outages) across Mandya.' },
-    { icon: AlertTriangle,   title: lang === 'kn' ? 'ವಿವರವಾದ ಫೀಡ್ ವಿಷಯ' : 'Detailed Feed Content',    description: lang === 'kn' ? 'ಸಮಸ್ಯೆ ವಿವರಣೆ, ನಿರ್ದಿಷ್ಟ ಸ್ಥಳ ಮತ್ತು ಜವಾಬ್ದಾರ ಇಲಾಖೆ (CMC, CESC, PWD) ವೀಕ್ಷಿಸಿ.' : 'View problem descriptions, specific locations, and the responsible Department (BESCOM, PWD, BWSSB, TMC).' },
+    { icon: AlertTriangle,   title: lang === 'kn' ? 'ವಿವರವಾದ ಫೀಡ್ ವಿಷಯ' : 'Detailed Feed Content',    description: lang === 'kn' ? 'ಸಮಸ್ಯೆ ವಿವರಣೆ, ನಿರ್ದಿಷ್ಟ ಸ್ಥಳ ಮತ್ತು ಜವಾಬ್ದಾರ ಇಲಾಖೆ (CMC, CESC, PWD) ವೀಕ್ಷಿಸಿ.' : 'View problem descriptions, specific locations, and the responsible Department (CMC, CESC, PWD, KUWS&DB, DHO, Mandya Traffic Police).' },
     { icon: Users,           title: lang === 'kn' ? 'ಸಮುದಾಯ ಕ್ರಿಯೆ' : 'Community Action',          description: lang === 'kn' ? '"ನಾನೂ ಭಾಗಿ" ಮೂಲಕ ಸಮಸ್ಯೆ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅಪ್‌ವೋಟ್ ಮಾಡಿ. ಪ್ರಭಾವಿತ ನಾಗರಿಕರ ಮೆಟ್ರಿಕ್ ನೋಡಿ.' : 'Verify and upvote issues with "Add Me Too". See the "Social Proof" metric showing citizens affected.' },
     { icon: Clock,           title: lang === 'kn' ? 'ಸಮಯ-ಸಂವೇದನಶೀಲ ಟ್ರ್ಯಾಕಿಂಗ್' : 'Time-Sensitive Tracking', description: lang === 'kn' ? 'ರಸ್ತೆ, ನೀರು, ವಿದ್ಯುತ್, ಚರಂಡಿ ಮತ್ತು ಆರೋಗ್ಯ ವಿಭಾಗಗಳಲ್ಲಿ ಸಮಸ್ಯೆ ಎಷ್ಟು ದಿನ ಸಕ್ರಿಯವಾಗಿದೆ ಎಂದು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.' : 'Track how many days an issue has been active across all categories: Roads, Water, Power, Drainage, and Health.' },
   ];
