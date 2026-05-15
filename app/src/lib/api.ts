@@ -35,9 +35,29 @@ export interface Complaint {
   upvoteCount: number;
   priorityScore: number;
   createdAt: string;
-  department_id?: string;
-  dept_short?: string;
-  dept_name?: string;
+  comment_count?: number;
+  department_id?: string | null;
+  dept_short?: string | null;
+  dept_name?: string | null;
+}
+
+export interface ProblemDetail extends Complaint {
+  officer_phone?: string | null;
+  resolved_at?: string | null;
+}
+
+export interface LinkedComplaint extends Complaint {
+  problem_id?: string | null;
+  citizen_name?: string | null;
+}
+
+export interface ProblemComment {
+  id: number;
+  problem_id: string;
+  author_name: string;
+  content: string;
+  is_official: boolean;
+  created_at: string;
 }
 
 export interface Department {
@@ -97,15 +117,45 @@ export function getFeed(params?: {
   category?: string;
   status?: string;
   ward?: string;
+  limit?: string | number;
+  offset?: string | number;
 }) {
-  const q = new URLSearchParams(params as Record<string, string>).toString();
+  const q = new URLSearchParams(
+    Object.entries(params ?? {}).reduce<Record<string, string>>((acc, [key, value]) => {
+      if (value !== undefined && value !== null) acc[key] = String(value);
+      return acc;
+    }, {}),
+  ).toString();
   return req<{ success: boolean; total: number; data: Complaint[] }>(
     `/api/feed${q ? "?" + q : ""}`,
   );
 }
 
 export function getComplaint(id: string) {
-  return req<{ success: boolean; data: Complaint }>(`/api/feed/${id}`);
+  return req<{
+    success: boolean;
+    problem: ProblemDetail;
+    complaints: LinkedComplaint[];
+  }>(`/api/feed/${id}`);
+}
+
+export function getProblemComments(id: string) {
+  return req<{ success: boolean; data: ProblemComment[] }>(
+    `/api/feed/${id}/comments`,
+  );
+}
+
+export function createProblemComment(
+  id: string,
+  data: { author_name: string; content: string; aadhaar_last4?: string },
+) {
+  return req<{ success: boolean; data: ProblemComment }>(
+    `/api/feed/${id}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
 }
 
 export function upvoteComplaint(id: string) {

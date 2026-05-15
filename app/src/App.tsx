@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/sections/HeroSection';
 import { TrustedBySection } from '@/sections/TrustedBySection';
+import { LiveComplaintsPreviewSection } from '@/sections/LiveComplaintsPreviewSection';
 import { FeaturesSection } from '@/sections/FeaturesSection';
 import { SpecialtiesSection } from '@/sections/SpecialtiesSection';
 import { HowItWorksSection } from '@/sections/HowItWorksSection';
@@ -80,6 +81,7 @@ function LandingPage() {
       {/* Actual page content sits above the map */}
       <main className="relative" style={{ zIndex: 2 }}>
         <HeroSection />
+        <LiveComplaintsPreviewSection />
         <TrustedBySection />
         <FeaturesSection />
         <SpecialtiesSection />

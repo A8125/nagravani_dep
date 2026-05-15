@@ -85,6 +85,9 @@ app.get("/api", (_req, res) => {
       report: "POST /api/report  (auto-deduplicates via embeddings)",
       feed: "GET  /api/feed?category=&department=&status=&limit=&offset=",
       feed_detail: "GET  /api/feed/:id",
+      feed_comments: "GET  /api/feed/:id/comments",
+      add_feed_comment:
+        "POST /api/feed/:id/comments { author_name, content, aadhaar_last4 }",
       search: "GET  /api/complaints/search?q=&threshold=&limit=",
       upvote: "PATCH /api/feed/:id/upvote",
       update_status: "PATCH /api/feed/:id/status { status }",

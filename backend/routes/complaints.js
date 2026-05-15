@@ -556,7 +556,8 @@ router.get("/feed", async (req, res) => {
              p.status, p.severity, p."upvoteCount", p."priorityScore",
              p.lat, p.lng, p.address, p."createdAt",
              d.short AS dept_short, d.name AS dept_name,
-             cp.photo_url, cp.photos
+             cp.photo_url, cp.photos,
+             COALESCE(cc.comment_count, 0) AS comment_count
       FROM problems p
       LEFT JOIN departments d ON d.id = p.department_id
       LEFT JOIN LATERAL (
@@ -576,6 +577,11 @@ router.get("/feed", async (req, res) => {
           WHERE c.problem_id = p.id
         ) all_photos ON TRUE
       ) cp ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pc.id)::int AS comment_count
+        FROM problem_comments pc
+        WHERE pc.problem_id = p.id
+      ) cc ON TRUE
       WHERE ${conditions.join(" AND ")}
       ORDER BY p."priorityScore" DESC, p."createdAt" DESC
       LIMIT $${p++} OFFSET $${p++}
@@ -627,6 +633,77 @@ router.get("/feed/:id", async (req, res) => {
       problem: problemRows[0],
       complaints: complaintRows,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/feed/:id/comments ────────────────────────────
+router.get("/feed/:id/comments", async (req, res) => {
+  try {
+    const { rows: problemRows } = await query(
+      "SELECT id FROM problems WHERE id = $1",
+      [req.params.id],
+    );
+    if (!problemRows[0]) return res.status(404).json({ error: "Not found" });
+
+    const { rows } = await query(
+      `
+      SELECT id, problem_id, author_name, content, is_official, created_at
+      FROM problem_comments
+      WHERE problem_id = $1
+      ORDER BY created_at ASC
+    `,
+      [req.params.id],
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/feed/:id/comments ───────────────────────────
+router.post("/feed/:id/comments", async (req, res) => {
+  try {
+    const authorName = String(req.body?.author_name || "").trim();
+    const content = String(req.body?.content || "").trim();
+    const aadhaarLast4 = String(req.body?.aadhaar_last4 || "").trim();
+
+    if (!authorName || authorName.length > 100) {
+      return res
+        .status(400)
+        .json({ error: "author_name is required (max 100 chars)" });
+    }
+
+    if (!content) {
+      return res.status(400).json({ error: "content is required" });
+    }
+
+    if (content.length > 500) {
+      return res.status(400).json({ error: "content must be under 500 chars" });
+    }
+
+    if (aadhaarLast4 && !/^\d{4}$/.test(aadhaarLast4)) {
+      return res.status(400).json({ error: "aadhaar_last4 must be a 4-digit string" });
+    }
+
+    const { rows: problemRows } = await query(
+      "SELECT id FROM problems WHERE id = $1",
+      [req.params.id],
+    );
+    if (!problemRows[0]) return res.status(404).json({ error: "Not found" });
+
+    const { rows } = await query(
+      `
+      INSERT INTO problem_comments (problem_id, author_name, content)
+      VALUES ($1, $2, $3)
+      RETURNING id, problem_id, author_name, content, is_official, created_at
+    `,
+      [req.params.id, authorName, content],
+    );
+
+    res.status(201).json({ success: true, data: rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

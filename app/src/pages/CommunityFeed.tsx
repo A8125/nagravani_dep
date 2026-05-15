@@ -1,9 +1,16 @@
-import { useEffect, useState } from 'react';
+import { type ElementType, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getFeed, type Complaint } from '../lib/api';
-import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { createProblemComment, getComplaint, getFeed, getProblemComments, upvoteComplaint, type Complaint, type LinkedComplaint, type ProblemComment, type ProblemDetail } from '../lib/api';
+import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight, MessageSquare, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 const CATEGORIES = ['All', 'road', 'water', 'streetlight', 'garbage', 'sewage', 'noise', 'encroachment'];
 const STATUSES   = ['All', 'pending', 'inProgress', 'resolved'];
@@ -13,7 +20,7 @@ const CAT_COLOR: Record<string, string> = {
   road: '#ef4444', water: '#3b82f6', streetlight: '#f59e0b',
   garbage: '#8b5cf6', sewage: '#06b6d4', noise: '#10b981', encroachment: '#f97316',
 };
-const CAT_ICON: Record<string, React.ElementType> = {
+const CAT_ICON: Record<string, ElementType> = {
   road: AlertTriangle, water: Droplets, streetlight: Zap,
   garbage: Wind, sewage: Droplets, noise: AlertTriangle, encroachment: MapPin,
 };
@@ -25,8 +32,322 @@ const SEVERITY_STYLE: Record<string, string> = {
   Critical:'border-l-red-500', High:'border-l-orange-400', Medium:'border-l-yellow-400', Low:'border-l-green-400',
 };
 
+function timeAgo(dt: string) {
+  const value = new Date(dt).getTime();
+  if (Number.isNaN(value)) return '';
+
+  const seconds = Math.floor((Date.now() - value) / 1000);
+  if (seconds < 60) return 'just now';
+
+  const intervals = [
+    ['year', 31536000],
+    ['month', 2592000],
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+  ] as const;
+
+  for (const [label, size] of intervals) {
+    const count = Math.floor(seconds / size);
+    if (count >= 1) {
+      return `${count} ${label}${count === 1 ? '' : 's'} ago`;
+    }
+  }
+
+  return 'just now';
+}
+
+type CommentSectionProps = {
+  comments: ProblemComment[];
+  problemId: string;
+  onCommentAdded: (comment: ProblemComment) => void;
+  shouldFocusInput: boolean;
+  onInputFocused: () => void;
+};
+
+function CommentSection({
+  comments,
+  problemId,
+  onCommentAdded,
+  shouldFocusInput,
+  onInputFocused,
+}: CommentSectionProps) {
+  const [authorName, setAuthorName] = useState('');
+  const [content, setContent] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const canSubmit =
+    authorName.trim().length > 0 &&
+    content.trim().length > 0 &&
+    content.trim().length <= 500 &&
+    !submitting;
+
+  useEffect(() => {
+    if (!shouldFocusInput || !commentInputRef.current) return;
+
+    commentInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    commentInputRef.current.focus();
+    onInputFocused();
+  }, [shouldFocusInput, onInputFocused]);
+
+  const submitComment = async () => {
+    if (!canSubmit) return;
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const res = await createProblemComment(problemId, {
+        author_name: authorName.trim(),
+        content: content.trim(),
+      });
+
+      onCommentAdded(res.data);
+      setContent('');
+    } catch {
+      setError('Could not post your comment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 rounded-3xl border border-border bg-cream/50 p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Comments</h3>
+          <p className="mt-1 text-sm text-stone">Discuss updates, work progress, and on-ground status.</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-stone">
+          <MessageSquare className="h-4 w-4" />
+          {comments.length}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {comments.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-border bg-white px-4 py-6 text-center text-sm text-stone">
+            No comments yet. Start the thread.
+          </div>
+        )}
+
+        {comments.map((comment) => (
+          <div key={comment.id} className="rounded-2xl border border-border bg-white px-4 py-3">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-charcoal">{comment.author_name}</span>
+              {comment.is_official && (
+                <Badge className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
+                  Official
+                </Badge>
+              )}
+              <span className="text-xs text-stone">{timeAgo(comment.created_at)}</span>
+            </div>
+            <p className="text-sm leading-6 text-stone">{comment.content}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-white p-4">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-stone">
+              Name
+            </label>
+            <Input
+              value={authorName}
+              onChange={(event) => setAuthorName(event.target.value)}
+              maxLength={100}
+              placeholder="Your name"
+              className="border-border bg-cream"
+            />
+          </div>
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <label className="block text-xs font-medium uppercase tracking-wide text-stone">
+                Comment
+              </label>
+              <span className="text-xs text-stone">
+                {content.length}/500
+              </span>
+            </div>
+            <Textarea
+              ref={commentInputRef}
+              value={content}
+              onChange={(event) => {
+                setContent(event.target.value.slice(0, 500));
+              }}
+              maxLength={500}
+              placeholder="Share an update or add context for this issue"
+              className="min-h-28 border-border bg-cream"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              onClick={submitComment}
+              disabled={!canSubmit}
+              className="rounded-full bg-charcoal px-5 text-white hover:bg-charcoal/90"
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Post comment
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type ProblemDetailContentProps = {
+  detailLoading: boolean;
+  detailError: string;
+  selectedProblem: ProblemDetail | null;
+  linkedComplaints: LinkedComplaint[];
+  comments: ProblemComment[];
+  onCommentAdded: (comment: ProblemComment) => void;
+  setLightboxUrl: (url: string | null) => void;
+  daysAgo: (dt: string) => string;
+  shouldFocusCommentInput: boolean;
+  onCommentInputFocused: () => void;
+};
+
+function ProblemDetailContent({
+  detailLoading,
+  detailError,
+  selectedProblem,
+  linkedComplaints,
+  comments,
+  onCommentAdded,
+  setLightboxUrl,
+  daysAgo,
+  shouldFocusCommentInput,
+  onCommentInputFocused,
+}: ProblemDetailContentProps) {
+  const allDetailPhotos = linkedComplaints
+    .map((complaint) => complaint.photoPath)
+    .filter((photo): photo is string => Boolean(photo));
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden bg-white">
+      <div className="flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
+        {detailLoading && (
+          <div className="flex min-h-[280px] items-center justify-center">
+            <Loader2 className="h-7 w-7 animate-spin text-charcoal" />
+          </div>
+        )}
+
+        {!detailLoading && detailError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {detailError}
+          </div>
+        )}
+
+        {!detailLoading && !detailError && selectedProblem && (
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-border bg-cream/60 p-4 sm:p-5">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[selectedProblem.status?.toLowerCase()] || ''}`}>
+                  {selectedProblem.status}
+                </span>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-stone">
+                  {selectedProblem.dept_short || 'Dept'}
+                </span>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs text-stone">
+                  {selectedProblem.category}
+                </span>
+              </div>
+              <h2 className="mb-2 font-serif text-2xl text-charcoal">{selectedProblem.title}</h2>
+              <p className="text-sm leading-6 text-stone">
+                {selectedProblem.summary || selectedProblem.description || 'No summary available yet.'}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-4 text-xs text-stone">
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {selectedProblem.ward}{selectedProblem.address ? ` • ${selectedProblem.address}` : ''}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {selectedProblem.upvoteCount} affected
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {daysAgo(selectedProblem.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            {allDetailPhotos.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Photos</h3>
+                  <span className="text-xs text-stone">{allDetailPhotos.length} image{allDetailPhotos.length === 1 ? '' : 's'}</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {allDetailPhotos.map((photo, index) => (
+                    <button
+                      key={`${photo}-${index}`}
+                      type="button"
+                      onClick={() => setLightboxUrl(photo)}
+                      className="overflow-hidden rounded-2xl border border-border bg-cream"
+                    >
+                      <img
+                        src={photo}
+                        alt={`Complaint photo ${index + 1}`}
+                        className="h-56 w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Citizen reports</h3>
+                <span className="text-xs text-stone">{linkedComplaints.length} linked complaint{linkedComplaints.length === 1 ? '' : 's'}</span>
+              </div>
+              <div className="space-y-3">
+                {linkedComplaints.map((complaint) => (
+                  <div key={complaint.id} className="rounded-2xl border border-border bg-white p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="font-medium text-charcoal">{complaint.title}</p>
+                      <span className="text-xs text-stone">{timeAgo(complaint.createdAt)}</span>
+                    </div>
+                    <p className="text-sm leading-6 text-stone">
+                      {complaint.description || complaint.summary || 'No additional description provided.'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <CommentSection
+              comments={comments}
+              problemId={selectedProblem.id}
+              onCommentAdded={onCommentAdded}
+              shouldFocusInput={shouldFocusCommentInput}
+              onInputFocused={onCommentInputFocused}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CommunityFeed() {
   const { lang } = useApp();
+  const isMobile = useIsMobile();
   const [all, setAll]         = useState<Complaint[]>([]);
   const [shown, setShown]     = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +356,14 @@ export default function CommunityFeed() {
   const [dept, setDept]       = useState('All');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [selectedProblem, setSelectedProblem] = useState<ProblemDetail | null>(null);
+  const [linkedComplaints, setLinkedComplaints] = useState<LinkedComplaint[]>([]);
+  const [comments, setComments] = useState<ProblemComment[]>([]);
+  const [shouldFocusCommentInput, setShouldFocusCommentInput] = useState(false);
 
   useEffect(() => {
     getFeed().then(r => { setAll(r.data); setLoading(false); }).catch(() => setLoading(false));
@@ -60,9 +389,15 @@ export default function CommunityFeed() {
   }, [all, cat, status, dept]);
 
   const handleCardClick = (problemId: string) => {
-    // If problem detail page doesn't exist yet, just log the id
-    console.log('Clicked problem:', problemId);
-    // TODO: navigate to /feed/${problemId} when detail page exists
+    setSelectedProblemId(problemId);
+    setShouldFocusCommentInput(false);
+    setDetailOpen(true);
+  };
+
+  const handleCommentButtonClick = (problemId: string) => {
+    setSelectedProblemId(problemId);
+    setShouldFocusCommentInput(true);
+    setDetailOpen(true);
   };
 
   const daysAgo = (dt: string) => {
@@ -85,6 +420,75 @@ export default function CommunityFeed() {
         [problemId]: (current + direction + total) % total,
       };
     });
+  };
+
+  useEffect(() => {
+    if (!detailOpen || !selectedProblemId) return;
+
+    let cancelled = false;
+
+    const loadProblemDetail = async () => {
+      setDetailLoading(true);
+      setDetailError('');
+
+      try {
+        const [detailRes, commentsRes] = await Promise.all([
+          getComplaint(selectedProblemId),
+          getProblemComments(selectedProblemId),
+        ]);
+
+        if (cancelled) return;
+
+        setSelectedProblem(detailRes.problem);
+        setLinkedComplaints(detailRes.complaints);
+        setComments(commentsRes.data);
+      } catch (error) {
+        if (cancelled) return;
+        setDetailError('Could not load this issue right now.');
+      } finally {
+        if (!cancelled) setDetailLoading(false);
+      }
+    };
+
+    loadProblemDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detailOpen, selectedProblemId]);
+
+  const handleDetailOpenChange = (open: boolean) => {
+    setDetailOpen(open);
+    if (!open) {
+      setSelectedProblemId(null);
+      setSelectedProblem(null);
+      setLinkedComplaints([]);
+      setComments([]);
+      setDetailError('');
+      setShouldFocusCommentInput(false);
+    }
+  };
+
+  const handleUpvote = async (id: string) => {
+    try {
+      const response = await upvoteComplaint(id);
+
+      setAll((prev) =>
+        prev.map((problem) =>
+          problem.id === id
+            ? { ...problem, upvoteCount: response.upvoteCount, priorityScore: response.priorityScore }
+            : problem,
+        ),
+      );
+
+      setSelectedProblem((prev) =>
+        prev?.id === id
+          ? { ...prev, upvoteCount: response.upvoteCount, priorityScore: response.priorityScore }
+          : prev,
+      );
+    } catch {
+      // Keep the current UI stable if the upvote request fails.
+    }
   };
 
   return (
@@ -257,7 +661,7 @@ export default function CommunityFeed() {
                     </div>
 
                     {/* Stats row */}
-                    <div className="flex items-center gap-4 text-xs">
+                    <div className="mb-3 flex items-center gap-4 text-xs">
                       <span className="flex items-center gap-1 text-charcoal">
                         <Users className="w-3.5 h-3.5" />
                         <strong>{p.upvoteCount}</strong> {lang === 'kn' ? 'ನಾಗರಿಕರು' : 'citizens affected'}
@@ -265,6 +669,32 @@ export default function CommunityFeed() {
                       <span className="text-stone">
                         Priority: <strong className="text-charcoal">{p.priorityScore}</strong>
                       </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleUpvote(p.id);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-cream px-3 py-1.5 text-xs font-medium text-stone transition-colors hover:border-charcoal hover:text-charcoal"
+                      >
+                        <Users className="h-3.5 w-3.5" />
+                        Add Me Too
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleCommentButtonClick(p.id);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-cream px-3 py-1.5 text-xs font-medium text-stone transition-colors hover:border-charcoal hover:text-charcoal"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        {p.comment_count ?? 0}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -286,6 +716,76 @@ export default function CommunityFeed() {
             onClick={(event) => event.stopPropagation()}
           />
         </div>
+      )}
+
+      {isMobile ? (
+        <Drawer open={detailOpen} onOpenChange={handleDetailOpenChange}>
+          <DrawerContent className="max-h-[90vh] border-border bg-white">
+            <DrawerHeader className="px-4 pb-2 text-left">
+              <DrawerTitle className="font-serif text-xl text-charcoal">
+                {selectedProblem?.title || 'Issue details'}
+              </DrawerTitle>
+              <DrawerDescription className="text-stone">
+                View complaint details and join the discussion thread.
+              </DrawerDescription>
+            </DrawerHeader>
+            <ProblemDetailContent
+              detailLoading={detailLoading}
+              detailError={detailError}
+              selectedProblem={selectedProblem}
+              linkedComplaints={linkedComplaints}
+              comments={comments}
+              onCommentAdded={(comment) => {
+                setComments((prev) => [...prev, comment]);
+                setAll((prev) =>
+                  prev.map((problem) =>
+                    problem.id === comment.problem_id
+                      ? { ...problem, comment_count: (problem.comment_count ?? 0) + 1 }
+                      : problem,
+                  ),
+                );
+              }}
+              setLightboxUrl={setLightboxUrl}
+              daysAgo={daysAgo}
+              shouldFocusCommentInput={shouldFocusCommentInput}
+              onCommentInputFocused={() => setShouldFocusCommentInput(false)}
+            />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={detailOpen} onOpenChange={handleDetailOpenChange}>
+          <DialogContent className="h-[85vh] max-w-4xl overflow-hidden rounded-3xl border-border bg-white p-0">
+            <DialogHeader className="border-b border-border px-6 py-5">
+              <DialogTitle className="font-serif text-2xl text-charcoal">
+                {selectedProblem?.title || 'Issue details'}
+              </DialogTitle>
+              <DialogDescription className="text-stone">
+                View complaint details and join the discussion thread.
+              </DialogDescription>
+            </DialogHeader>
+            <ProblemDetailContent
+              detailLoading={detailLoading}
+              detailError={detailError}
+              selectedProblem={selectedProblem}
+              linkedComplaints={linkedComplaints}
+              comments={comments}
+              onCommentAdded={(comment) => {
+                setComments((prev) => [...prev, comment]);
+                setAll((prev) =>
+                  prev.map((problem) =>
+                    problem.id === comment.problem_id
+                      ? { ...problem, comment_count: (problem.comment_count ?? 0) + 1 }
+                      : problem,
+                  ),
+                );
+              }}
+              setLightboxUrl={setLightboxUrl}
+              daysAgo={daysAgo}
+              shouldFocusCommentInput={shouldFocusCommentInput}
+              onCommentInputFocused={() => setShouldFocusCommentInput(false)}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
