@@ -1,8 +1,8 @@
 import { type ElementType, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { createProblemComment, getComplaint, getFeed, getProblemComments, upvoteComplaint, type Complaint, type LinkedComplaint, type ProblemComment, type ProblemDetail } from '../lib/api';
-import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight, MessageSquare, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight, MessageSquare, Loader2, Share2 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ToastPill } from '@/components/ui/toast-pill';
 
 const CATEGORIES = ['All', 'road', 'water', 'streetlight', 'garbage', 'sewage', 'noise', 'encroachment'];
 const STATUSES   = ['All', 'pending', 'inProgress', 'resolved'];
@@ -348,6 +349,7 @@ function ProblemDetailContent({
 export default function CommunityFeed() {
   const { lang } = useApp();
   const isMobile = useIsMobile();
+  const location = useLocation();
   const [all, setAll]         = useState<Complaint[]>([]);
   const [shown, setShown]     = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -364,9 +366,60 @@ export default function CommunityFeed() {
   const [linkedComplaints, setLinkedComplaints] = useState<LinkedComplaint[]>([]);
   const [comments, setComments] = useState<ProblemComment[]>([]);
   const [shouldFocusCommentInput, setShouldFocusCommentInput] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [issueNotFound, setIssueNotFound] = useState('');
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const initialIssueHandledRef = useRef(false);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  const replaceIssueQuery = (issueId: string | null) => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (issueId) params.set('issue', issueId);
+    else params.delete('issue');
+
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`;
+    window.history.replaceState({}, '', nextUrl);
+  };
+
+  const scrollToCard = (problemId: string) => {
+    window.requestAnimationFrame(() => {
+      cardRefs.current[problemId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+  };
+
+  const openIssueDetail = (
+    problemId: string,
+    options?: { focusCommentInput?: boolean; scrollCard?: boolean },
+  ) => {
+    setSelectedProblemId(problemId);
+    setShouldFocusCommentInput(Boolean(options?.focusCommentInput));
+    setDetailOpen(true);
+    replaceIssueQuery(problemId);
+    if (options?.scrollCard) scrollToCard(problemId);
+  };
 
   useEffect(() => {
     getFeed().then(r => { setAll(r.data); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -389,15 +442,11 @@ export default function CommunityFeed() {
   }, [all, cat, status, dept]);
 
   const handleCardClick = (problemId: string) => {
-    setSelectedProblemId(problemId);
-    setShouldFocusCommentInput(false);
-    setDetailOpen(true);
+    openIssueDetail(problemId);
   };
 
   const handleCommentButtonClick = (problemId: string) => {
-    setSelectedProblemId(problemId);
-    setShouldFocusCommentInput(true);
-    setDetailOpen(true);
+    openIssueDetail(problemId, { focusCommentInput: true });
   };
 
   const daysAgo = (dt: string) => {
@@ -457,6 +506,28 @@ export default function CommunityFeed() {
     };
   }, [detailOpen, selectedProblemId]);
 
+  useEffect(() => {
+    if (loading || initialIssueHandledRef.current) return;
+
+    const issueId = new URLSearchParams(location.search).get('issue');
+    if (!issueId) {
+      initialIssueHandledRef.current = true;
+      return;
+    }
+
+    const issue = all.find((problem) => problem.id === issueId);
+    initialIssueHandledRef.current = true;
+
+    if (issue) {
+      setIssueNotFound('');
+      openIssueDetail(issue.id, { scrollCard: true });
+      return;
+    }
+
+    setIssueNotFound('Issue not found');
+    replaceIssueQuery(null);
+  }, [all, loading, location.search]);
+
   const handleDetailOpenChange = (open: boolean) => {
     setDetailOpen(open);
     if (!open) {
@@ -466,6 +537,7 @@ export default function CommunityFeed() {
       setComments([]);
       setDetailError('');
       setShouldFocusCommentInput(false);
+      replaceIssueQuery(null);
     }
   };
 
@@ -488,6 +560,27 @@ export default function CommunityFeed() {
       );
     } catch {
       // Keep the current UI stable if the upvote request fails.
+    }
+  };
+
+  const handleShare = async (problem: Complaint) => {
+    const shareUrl = new URL(`/feed?issue=${encodeURIComponent(problem.id)}`, window.location.origin).toString();
+    const shareData = {
+      title: problem.title,
+      text: `${problem.title} in ${problem.ward}`,
+      url: shareUrl,
+    };
+
+    try {
+      if (isMobile && navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      showToast('Link copied!');
+    } catch {
+      showToast('Could not share link');
     }
   };
 
@@ -544,6 +637,12 @@ export default function CommunityFeed() {
           {lang === 'kn' ? 'ತೋರಿಸಲಾಗುತ್ತಿದೆ' : 'Showing'} <span className="font-semibold text-charcoal">{shown.length}</span> {lang === 'kn' ? 'ಸಮಸ್ಯೆಗಳು' : 'issues'}
         </p>
 
+        {issueNotFound && (
+          <div className="mb-4 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">
+            {issueNotFound}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
@@ -568,6 +667,9 @@ export default function CommunityFeed() {
             const activePhoto = photos[activeIndex] ?? null;
             return (
               <motion.div key={p.id}
+                ref={(node) => {
+                  cardRefs.current[p.id] = node;
+                }}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
                 onClick={() => handleCardClick(p.id)}
@@ -695,6 +797,18 @@ export default function CommunityFeed() {
                         <MessageSquare className="h-3.5 w-3.5" />
                         {p.comment_count ?? 0}
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleShare(p);
+                        }}
+                        className="inline-flex items-center justify-center rounded-full border border-border bg-cream p-1.5 text-stone transition-colors hover:border-charcoal hover:text-charcoal"
+                        aria-label={`Share ${p.id}`}
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -787,6 +901,8 @@ export default function CommunityFeed() {
           </DialogContent>
         </Dialog>
       )}
+
+      <ToastPill message={toastMessage} />
     </div>
   );
 }
