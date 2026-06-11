@@ -1,13 +1,12 @@
 import { type ElementType, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { createProblemComment, getComplaint, getFeed, getProblemComments, upvoteComplaint, type Complaint, type LinkedComplaint, type ProblemComment, type ProblemDetail } from '../lib/api';
-import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight, MessageSquare, Loader2, Share2 } from 'lucide-react';
+import { MapPin, Users, Clock, Zap, Droplets, AlertTriangle, Wind, Filter, ArrowRight, ChevronLeft, ChevronRight, MessageSquare, Loader2, Share2, ShieldCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -115,42 +114,58 @@ function CommentSection({
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-border bg-cream/50 p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Comments</h3>
-          <p className="mt-1 text-sm text-stone">Discuss updates, work progress, and on-ground status.</p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-stone">
-          <MessageSquare className="h-4 w-4" />
+    <div className="border-t border-border pt-6">
+      <div className="mb-4 flex items-center gap-3">
+        <h3 className="text-lg font-semibold text-charcoal">Discussion</h3>
+        <span className="inline-flex items-center rounded-full bg-cream px-2.5 py-1 text-xs font-semibold text-stone">
           {comments.length}
-        </div>
+        </span>
       </div>
+
+      <p className="mb-4 text-sm text-stone">Discuss updates, work progress, and on-ground status.</p>
 
       <div className="space-y-3">
         {comments.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border bg-white px-4 py-6 text-center text-sm text-stone">
+          <div className="rounded-xl border border-dashed border-border bg-white px-4 py-6 text-center text-sm text-stone">
             No comments yet. Start the thread.
           </div>
         )}
 
         {comments.map((comment) => (
-          <div key={comment.id} className="rounded-2xl border border-border bg-white px-4 py-3">
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-charcoal">{comment.author_name}</span>
-              {comment.is_official && (
-                <Badge className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">
-                  Official
-                </Badge>
-              )}
-              <span className="text-xs text-stone">{timeAgo(comment.created_at)}</span>
+          <div
+            key={comment.id}
+            className={
+              comment.is_official
+                ? 'rounded-xl border border-slate-800 bg-gray-900 px-4 py-4 text-white shadow-sm'
+                : 'rounded-xl border border-gray-200 bg-white px-4 py-4'
+            }
+          >
+            {comment.is_official && (
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                Official Response
+              </p>
+            )}
+
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {comment.is_official && <ShieldCheck className="h-4 w-4 text-white/85" />}
+                <span className={`text-sm font-semibold ${comment.is_official ? 'text-white' : 'text-charcoal'}`}>
+                  {comment.author_name}
+                </span>
+              </div>
+              <span className={`shrink-0 text-xs ${comment.is_official ? 'text-white/60' : 'text-stone'}`}>
+                {timeAgo(comment.created_at)}
+              </span>
             </div>
-            <p className="text-sm leading-6 text-stone">{comment.content}</p>
+
+            <p className={`text-sm leading-6 ${comment.is_official ? 'text-white/92' : 'text-stone'}`}>
+              {comment.content}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border bg-white p-4">
+      <div className="mt-4 rounded-2xl border border-border bg-white p-4">
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-stone">
@@ -197,7 +212,7 @@ function CommentSection({
               type="button"
               onClick={submitComment}
               disabled={!canSubmit}
-              className="rounded-full bg-charcoal px-5 text-white hover:bg-charcoal/90"
+              className="rounded-full bg-red-600 px-5 text-white hover:bg-red-700"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Post comment
@@ -288,7 +303,8 @@ function ProblemDetailContent({
             </div>
 
             {allDetailPhotos.length > 0 && (
-              <div className="space-y-3">
+              <div className="border-t border-border pt-6">
+                <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Photos</h3>
                   <span className="text-xs text-stone">{allDetailPhotos.length} image{allDetailPhotos.length === 1 ? '' : 's'}</span>
@@ -309,21 +325,34 @@ function ProblemDetailContent({
                     </button>
                   ))}
                 </div>
+                </div>
               </div>
             )}
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Citizen reports</h3>
-                <span className="text-xs text-stone">{linkedComplaints.length} linked complaint{linkedComplaints.length === 1 ? '' : 's'}</span>
+            <div className="border-t border-border pt-6">
+              <div className="mb-4 flex items-center gap-3">
+                <h3 className="text-lg font-semibold text-charcoal">Citizen Reports</h3>
+                <span className="inline-flex items-center rounded-full bg-cream px-2.5 py-1 text-xs font-semibold text-stone">
+                  {linkedComplaints.length}
+                </span>
               </div>
+
+              <p className="mb-4 text-sm text-stone">All linked citizen submissions associated with this issue.</p>
+
               <div className="space-y-3">
                 {linkedComplaints.map((complaint) => (
-                  <div key={complaint.id} className="rounded-2xl border border-border bg-white p-4">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <p className="font-medium text-charcoal">{complaint.title}</p>
-                      <span className="text-xs text-stone">{timeAgo(complaint.createdAt)}</span>
+                  <div
+                    key={complaint.id}
+                    className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                    style={{ borderLeftWidth: '3px', borderLeftColor: CAT_COLOR[complaint.category] || '#d6d3d1' }}
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <p className="font-semibold text-charcoal">
+                        {complaint.citizen_name || 'Citizen report'}
+                      </p>
+                      <span className="shrink-0 text-right text-xs text-stone">{timeAgo(complaint.createdAt)}</span>
                     </div>
+                    <p className="mb-2 text-sm font-medium text-charcoal/90">{complaint.title}</p>
                     <p className="text-sm leading-6 text-stone">
                       {complaint.description || complaint.summary || 'No additional description provided.'}
                     </p>

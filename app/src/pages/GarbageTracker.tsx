@@ -3,9 +3,13 @@ import { motion } from "framer-motion";
 import { AlertTriangle, CalendarDays, Clock3, Loader2, Truck } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import {
+  getGarbageAutoComplaint,
+  getGarbageHistory,
   getGarbageMissedCount,
   getGarbageSchedules,
   reportGarbageMissed,
+  type GarbageAutoComplaint,
+  type GarbageMissHistoryPoint,
   type GarbageSchedule,
 } from "@/lib/api";
 import {
@@ -23,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const DAY_ORDER = [
   "Sunday",
@@ -56,6 +62,35 @@ function getTodayName() {
   return DAY_ORDER[new Date().getDay()];
 }
 
+function formatChartDateLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function timeAgo(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+
+  const units = [
+    ["day", 86400],
+    ["hour", 3600],
+    ["minute", 60],
+  ] as const;
+
+  for (const [label, size] of units) {
+    const count = Math.floor(seconds / size);
+    if (count >= 1) {
+      return `${count} ${label}${count === 1 ? "" : "s"} ago`;
+    }
+  }
+
+  return "just now";
+}
+
 function getNextCollectionDay(days: string[]) {
   const todayIndex = new Date().getDay();
   const scheduledIndexes = days
@@ -86,6 +121,9 @@ export default function GarbageTracker() {
   const [submitting, setSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [autoComplaintRaised, setAutoComplaintRaised] = useState(false);
+  const [history, setHistory] = useState<GarbageMissHistoryPoint[]>([]);
+  const [autoComplaint, setAutoComplaint] = useState<GarbageAutoComplaint | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -115,23 +153,33 @@ export default function GarbageTracker() {
 
     let active = true;
 
-    async function loadCount() {
+    async function loadWardInsights() {
       setCountLoading(true);
+      setInsightsLoading(true);
       try {
-        const res = await getGarbageMissedCount(selectedWard);
+        const [countRes, historyRes, autoComplaintRes] = await Promise.all([
+          getGarbageMissedCount(selectedWard),
+          getGarbageHistory(selectedWard),
+          getGarbageAutoComplaint(selectedWard),
+        ]);
         if (!active) return;
-        setMissedCount(res.count);
-        setAutoComplaintRaised(res.count >= 5);
+        setMissedCount(countRes.count);
+        setAutoComplaintRaised(countRes.count >= 5 || Boolean(autoComplaintRes.data));
+        setHistory(historyRes.data);
+        setAutoComplaint(autoComplaintRes.data);
         setHasSubmitted(false);
       } catch (err: unknown) {
         if (!active) return;
-        setError(getErrorMessage(err, "Failed to load missed report count"));
+        setError(getErrorMessage(err, "Failed to load garbage tracker insights"));
       } finally {
-        if (active) setCountLoading(false);
+        if (active) {
+          setCountLoading(false);
+          setInsightsLoading(false);
+        }
       }
     }
 
-    loadCount();
+    loadWardInsights();
     return () => {
       active = false;
     };
@@ -148,6 +196,8 @@ export default function GarbageTracker() {
   );
   const nextCollectionDay = schedule ? getNextCollectionDay(schedule.collection_days) : null;
   const isAadhaarValid = /^\d{12}$/.test(aadhaarNumber);
+  const progressValue = Math.min((missedCount / 5) * 100, 100);
+  const progressTone = missedCount >= 5 ? "bg-red-600" : "bg-amber-500";
 
   const countLabel = useMemo(() => {
     if (hasSubmitted) {
@@ -167,6 +217,43 @@ export default function GarbageTracker() {
       ? `ಇಂದು ${missedCount} ಮಿಸ್ ವರದಿಗಳು ದಾಖಲಾಗಿವೆ`
       : `${missedCount} citizens reported this today`;
   }, [hasSubmitted, isKannada, missedCount]);
+
+  const historyChartData = useMemo(() => {
+    if (!schedule) return [];
+
+    const missCountByDate = new Map(
+      history.map((item) => [
+        new Date(item.reported_date).toISOString().slice(0, 10),
+        item.miss_count,
+      ]),
+    );
+    const today = new Date();
+    const points = [];
+
+    for (let offset = 27; offset >= 0; offset -= 1) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - offset);
+      const isoDate = date.toISOString().slice(0, 10);
+      const dayName = DAY_ORDER[date.getDay()];
+      const isScheduledDay = schedule.collection_days.some(
+        (day) => normalizeDay(day) === dayName,
+      );
+
+      if (!isScheduledDay) continue;
+
+      const missCount = missCountByDate.get(isoDate) ?? 0;
+      points.push({
+        date: isoDate,
+        label: formatChartDateLabel(isoDate),
+        miss_count: missCount,
+        fill: missCount > 0 ? "#dc2626" : "#16a34a",
+      });
+    }
+
+    return points;
+  }, [history, schedule]);
+
+  const totalMissReportsLast28Days = historyChartData.reduce((sum, item) => sum + item.miss_count, 0);
 
   async function submitMissedReport() {
     if (!schedule) return;
@@ -192,10 +279,23 @@ export default function GarbageTracker() {
       setHasSubmitted(true);
       setDialogOpen(false);
       setAadhaarNumber("");
+      setCountLoading(true);
+      setInsightsLoading(true);
+      const [historyRes, autoComplaintRes] = await Promise.all([
+        getGarbageHistory(schedule.ward),
+        getGarbageAutoComplaint(schedule.ward),
+      ]);
+      setHistory(historyRes.data);
+      setAutoComplaint(autoComplaintRes.data);
+      setAutoComplaintRaised(
+        res.auto_complaint_raised || res.count >= 5 || Boolean(autoComplaintRes.data),
+      );
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to submit missed report"));
     } finally {
       setSubmitting(false);
+      setCountLoading(false);
+      setInsightsLoading(false);
     }
   }
 
@@ -380,6 +480,124 @@ export default function GarbageTracker() {
               {error && (
                 <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {error}
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone">
+                  {isKannada ? "ಇಂದಿನ ಮಿಸ್ ವರದಿಗಳು" : "Today's Miss Reports"}
+                </p>
+                <h3 className="text-2xl font-semibold text-charcoal">
+                  {isKannada
+                    ? `ಇಂದು ${missedCount} ಜನರು ಮಿಸ್ ವರದಿ ಮಾಡಿದ್ದಾರೆ`
+                    : `${missedCount} people have reported a missed collection today`}
+                </h3>
+                <div className="mt-5">
+                  <div className="mt-2 flex items-center justify-between text-xs text-stone">
+                    <span>0</span>
+                    <span>5</span>
+                  </div>
+                  <div className="mt-2 h-3 overflow-hidden rounded-full bg-stone-100">
+                    <div
+                      className={`h-full rounded-full transition-all ${progressTone}`}
+                      style={{ width: `${progressValue}%` }}
+                    />
+                  </div>
+                </div>
+                <p className="mt-4 text-sm text-stone">
+                  {isKannada
+                    ? `${missedCount} ವರದಿಗಳು ಬಂದಿವೆ. 5 ವರದಿಗಳಲ್ಲಿ CMC ಗೆ ಸ್ವಯಂ ದೂರು ಹೋಗುತ್ತದೆ.`
+                    : `${missedCount} reports received. At 5 reports, an auto-complaint is raised with CMC.`}
+                </p>
+                {autoComplaintRaised && (
+                  <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                    ⚠️ {isKannada ? "CMC ಗೆ ಸ್ವಯಂ ದೂರು ಕಳುಹಿಸಲಾಗಿದೆ" : "Auto-complaint has been raised with CMC"}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-3xl border border-border bg-white p-6 shadow-sm lg:col-span-2">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone">
+                      {isKannada ? "ಕೊನೆಯ 4 ವಾರಗಳು" : "Collection History — Last 4 Weeks"}
+                    </p>
+                    <h3 className="text-xl font-semibold text-charcoal">
+                      {isKannada ? "ಮಿಸ್ ವರದಿ ಇತಿಹಾಸ" : "Missed Collection History"}
+                    </h3>
+                  </div>
+                  {insightsLoading && <Loader2 className="h-4 w-4 animate-spin text-stone" />}
+                </div>
+
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={historyChartData}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        minTickGap={18}
+                      />
+                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                      <Tooltip
+                        cursor={{ fill: "rgba(28, 28, 30, 0.05)" }}
+                        formatter={(value: number) => [`${value} miss reports`, "Reports"]}
+                        labelFormatter={(label) => `Date: ${label}`}
+                      />
+                      <Bar dataKey="miss_count" radius={[8, 8, 0, 0]}>
+                        {historyChartData.map((entry) => (
+                          <Cell key={entry.date} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <p className="mt-4 text-sm text-stone">
+                  {isKannada
+                    ? `ಕಳೆದ 28 ದಿನಗಳಲ್ಲಿ ${totalMissReportsLast28Days} ಬಾರಿ ಮಿಸ್ ವರದಿಯಾಗಿದೆ`
+                    : `Missed ${totalMissReportsLast28Days} times in the last 28 days`}
+                </p>
+              </div>
+
+              {autoComplaint && (
+                <div className="rounded-3xl border border-border bg-white p-6 shadow-sm lg:col-span-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone">
+                    {isKannada ? "ಸ್ವಯಂ ದೂರು" : "Auto-Complaint Raised"}
+                  </p>
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <h3 className="text-xl font-semibold text-charcoal">{autoComplaint.title}</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                            autoComplaint.status === "resolved"
+                              ? "bg-green-100 text-green-800"
+                              : autoComplaint.status === "inProgress"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {autoComplaint.status === "inProgress" ? "In Progress" : autoComplaint.status}
+                        </span>
+                        <span className="text-sm text-stone">
+                          {isKannada
+                            ? `${timeAgo(autoComplaint.created_at)} ದೂರು ದಾಖಲಾಗಿದೆ`
+                            : `Raised ${timeAgo(autoComplaint.created_at)}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      to={`/feed?issue=${encodeURIComponent(autoComplaint.id)}`}
+                      className="inline-flex items-center text-sm font-semibold text-red-600 transition-colors hover:text-red-700"
+                    >
+                      {isKannada ? "ಈ ಸಮಸ್ಯೆಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ →" : "Track this issue →"}
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>

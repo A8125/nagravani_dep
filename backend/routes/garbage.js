@@ -176,9 +176,9 @@ async function ensureAutoComplaintForToday(ward, count) {
     await query(
       `
       INSERT INTO problems
-        (id, title, category, ward, summary, status, "upvoteCount", "priorityScore", department_id, address)
+        (id, title, category, ward, summary, status, "upvoteCount", "priorityScore", department_id, address, source)
       VALUES
-        ($1, $2, 'garbage', $3, $4, 'pending', $5, $6, $7, $3)
+        ($1, $2, 'garbage', $3, $4, 'pending', $5, $6, $7, $3, 'auto')
       `,
       [uuid(), title, ward, summary, count, priorityScore, GARBAGE_DEPARTMENT_ID],
     );
@@ -239,6 +239,51 @@ router.get("/missed/:ward", async (req, res) => {
     const count = await getTodayMissedCount(ward);
     res.json({ success: true, ward, date: new Date().toISOString().slice(0, 10), count });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/history/:ward", async (req, res) => {
+  try {
+    const ward = decodeURIComponent(req.params.ward).trim();
+    const { rows } = await query(
+      `
+      SELECT reported_date, COUNT(*)::int as miss_count
+      FROM garbage_missed_reports
+      WHERE ward = $1
+      AND reported_date >= CURRENT_DATE - INTERVAL '28 days'
+      GROUP BY reported_date
+      ORDER BY reported_date ASC
+      `,
+      [ward],
+    );
+
+    res.json({ success: true, ward, data: rows });
+  } catch (err) {
+    console.error("[GARBAGE ERROR]", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/autocomplaint/:ward", async (req, res) => {
+  try {
+    const ward = decodeURIComponent(req.params.ward).trim();
+    const { rows } = await query(
+      `
+      SELECT id, title, status, created_at
+      FROM problems
+      WHERE ward = $1
+      AND source = 'auto'
+      AND category = 'garbage'
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [ward],
+    );
+
+    res.json({ success: true, ward, data: rows[0] || null });
+  } catch (err) {
+    console.error("[GARBAGE ERROR]", err);
     res.status(500).json({ error: err.message });
   }
 });

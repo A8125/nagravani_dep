@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/sections/HeroSection';
 import { TrustedBySection } from '@/sections/TrustedBySection';
@@ -20,6 +20,8 @@ import { AppProvider } from '@/context/AppContext';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import GovLogin from '@/pages/gov/GovLogin';
+import GovDashboard from '@/pages/gov/GovDashboard';
 
 const mandyaBounds = L.latLngBounds([12.20, 76.32], [13.06, 77.33]);
 
@@ -92,25 +94,36 @@ function LandingPage() {
   );
 }
 
+function AppShell() {
+  const location = useLocation();
+  const isGovRoute = location.pathname.startsWith('/gov');
+
+  return (
+    <div className="min-h-screen bg-cream dark:bg-gray-950 transition-colors duration-300">
+      {!isGovRoute && <Navbar />}
+      <Routes>
+        <Route path="/"             element={<LandingPage />} />
+        <Route path="/map"          element={<MapPage />} />
+        <Route path="/raise"        element={<ComplaintPortal />} />
+        <Route path="/feed"         element={<CommunityFeed />} />
+        <Route path="/garbage"      element={<GarbageTracker />} />
+        <Route path="/departments"  element={<DepartmentDirectory />} />
+        <Route path="/ai"           element={<AIHelpDesk />} />
+        <Route path="/profile"      element={<CitizenDashboard />} />
+        <Route path="/admin"        element={<AdminDashboard />} />
+        <Route path="/gov"          element={<GovLogin />} />
+        <Route path="/gov/dashboard" element={<GovDashboard />} />
+      </Routes>
+      {!isGovRoute && <Footer />}
+    </div>
+  );
+}
+
 function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-cream dark:bg-gray-950 transition-colors duration-300">
-          <Navbar />
-          <Routes>
-            <Route path="/"             element={<LandingPage />} />
-            <Route path="/map"          element={<MapPage />} />
-            <Route path="/raise"        element={<ComplaintPortal />} />
-            <Route path="/feed"         element={<CommunityFeed />} />
-            <Route path="/garbage"      element={<GarbageTracker />} />
-            <Route path="/departments"  element={<DepartmentDirectory />} />
-            <Route path="/ai"           element={<AIHelpDesk />} />
-            <Route path="/profile"      element={<CitizenDashboard />} />
-            <Route path="/admin"        element={<AdminDashboard />} />
-          </Routes>
-          <Footer />
-        </div>
+        <AppShell />
       </BrowserRouter>
     </AppProvider>
   );

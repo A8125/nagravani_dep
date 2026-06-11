@@ -99,7 +99,7 @@ export function Navbar() {
             <span className="w-px h-5 bg-stone/20 dark:bg-white/10 mx-1" />
 
             {/* Govt Portal — ghost/outline */}
-            <Link to="/admin"
+            <Link to="/gov"
               className="text-sm font-medium text-stone dark:text-gray-400 hover:text-charcoal dark:hover:text-white transition-colors">
               {lang === 'kn' ? 'ಸರ್ಕಾರ' : 'Govt Portal'}
             </Link>
@@ -151,7 +151,7 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="pt-3 border-t border-border dark:border-white/10 flex flex-col gap-2.5">
-                <Link to="/admin" onClick={() => setOpen(false)}
+                <Link to="/gov" onClick={() => setOpen(false)}
                   className="text-sm font-medium text-stone dark:text-gray-400 hover:text-charcoal dark:hover:text-white">
                   {lang === 'kn' ? 'ಸರ್ಕಾರ ಪೋರ್ಟಲ್' : 'Govt Portal'}
                 </Link>

@@ -669,6 +669,7 @@ router.post("/feed/:id/comments", async (req, res) => {
     const authorName = String(req.body?.author_name || "").trim();
     const content = String(req.body?.content || "").trim();
     const aadhaarLast4 = String(req.body?.aadhaar_last4 || "").trim();
+    const isOfficial = req.body?.is_official === true;
 
     if (!authorName || authorName.length > 100) {
       return res
@@ -696,14 +697,114 @@ router.post("/feed/:id/comments", async (req, res) => {
 
     const { rows } = await query(
       `
-      INSERT INTO problem_comments (problem_id, author_name, content)
-      VALUES ($1, $2, $3)
+      INSERT INTO problem_comments (problem_id, author_name, content, is_official)
+      VALUES ($1, $2, $3, $4)
       RETURNING id, problem_id, author_name, content, is_official, created_at
     `,
-      [req.params.id, authorName, content],
+      [req.params.id, authorName, content, isOfficial],
     );
 
     res.status(201).json({ success: true, data: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE /api/feed/:id/comments/:commentId ─────────────
+router.delete("/feed/:id/comments/:commentId", async (req, res) => {
+  try {
+    const department = String(req.headers.department || "").trim().toUpperCase();
+    const VALID_DEPTS = ["CMC", "PWD", "CESC", "MUDA", "DHO"];
+
+    if (!department || !VALID_DEPTS.includes(department)) {
+      return res.status(403).json({ error: "Unauthorized: valid department required" });
+    }
+
+    const { id, commentId } = req.params;
+
+    const { rowCount } = await query(
+      "DELETE FROM problem_comments WHERE id = $1 AND problem_id = $2",
+      [commentId, id],
+    );
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/gov/complaints ──────────────────────────────
+router.get("/gov/complaints", async (req, res) => {
+  try {
+    const department = String(req.query.department || "").trim().toUpperCase();
+
+    if (!department) {
+      return res.status(400).json({ error: "department is required" });
+    }
+
+    const { rows } = await query(
+      `
+      SELECT
+        p.id,
+        p.title,
+        p.category,
+        p.ward,
+        p.summary,
+        p.status,
+        p.severity,
+        p."upvoteCount",
+        p."priorityScore",
+        p.lat,
+        p.lng,
+        p.address,
+        p."createdAt",
+        p.resolved_at,
+        d.short AS dept_short,
+        d.name AS dept_name,
+        cp.photo_url,
+        cp.photos,
+        COALESCE(cc.comment_count, 0) AS comment_count,
+        GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - p."createdAt")) / 86400))::int AS days_open
+      FROM problems p
+      JOIN departments d ON d.id = p.department_id
+      LEFT JOIN LATERAL (
+        SELECT latest.photo_url,
+               all_photos.photos
+        FROM (
+          SELECT c."photoPath" AS photo_url
+          FROM complaints c
+          WHERE c.problem_id = p.id
+            AND c."photoPath" IS NOT NULL
+          ORDER BY c."createdAt" DESC
+          LIMIT 1
+        ) latest
+        FULL OUTER JOIN (
+          SELECT array_remove(array_agg(DISTINCT c."photoPath"), NULL) AS photos
+          FROM complaints c
+          WHERE c.problem_id = p.id
+        ) all_photos ON TRUE
+      ) cp ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT COUNT(pc.id)::int AS comment_count
+        FROM problem_comments pc
+        WHERE pc.problem_id = p.id
+      ) cc ON TRUE
+      WHERE UPPER(d.short) = $1
+      ORDER BY p."priorityScore" DESC, p."createdAt" DESC
+    `,
+      [department],
+    );
+
+    const data = rows.map((row) => ({
+      ...row,
+      photos: Array.isArray(row.photos) ? row.photos : [],
+    }));
+
+    res.json({ success: true, total: data.length, data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

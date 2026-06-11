@@ -46,6 +46,11 @@ export interface ProblemDetail extends Complaint {
   resolved_at?: string | null;
 }
 
+export interface GovComplaint extends Complaint {
+  days_open: number;
+  resolved_at?: string | null;
+}
+
 export interface LinkedComplaint extends Complaint {
   problem_id?: string | null;
   citizen_name?: string | null;
@@ -106,6 +111,18 @@ export interface GarbageSchedule {
   updated_at: string;
 }
 
+export interface GarbageMissHistoryPoint {
+  reported_date: string;
+  miss_count: number;
+}
+
+export interface GarbageAutoComplaint {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+}
+
 export function getStats() {
   return req<{
     success: boolean;
@@ -155,7 +172,7 @@ export function getProblemComments(id: string) {
 
 export function createProblemComment(
   id: string,
-  data: { author_name: string; content: string; aadhaar_last4?: string },
+  data: { author_name: string; content: string; aadhaar_last4?: string; is_official?: boolean },
 ) {
   return req<{ success: boolean; data: ProblemComment }>(
     `/api/feed/${id}/comments`,
@@ -164,6 +181,15 @@ export function createProblemComment(
       body: JSON.stringify(data),
     },
   );
+}
+
+export async function deleteProblemComment(problemId: string, commentId: number, department: string) {
+  const res = await fetch(`${BASE}/api/feed/${problemId}/comments/${commentId}`, {
+    method: "DELETE",
+    headers: { department },
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json() as Promise<{ success: boolean }>;
 }
 
 export function upvoteComplaint(id: string) {
@@ -182,6 +208,12 @@ export function updateStatus(id: string, status: string) {
       method: "PATCH",
       body: JSON.stringify({ status }),
     },
+  );
+}
+
+export function getGovComplaints(department: string) {
+  return req<{ success: boolean; total: number; data: GovComplaint[] }>(
+    `/api/gov/complaints?department=${encodeURIComponent(department)}`,
   );
 }
 
@@ -216,6 +248,18 @@ export function getGarbageSchedule(ward: string) {
 export function getGarbageMissedCount(ward: string) {
   return req<{ success: boolean; ward: string; date: string; count: number }>(
     `/api/garbage/missed/${encodeURIComponent(ward)}`,
+  );
+}
+
+export function getGarbageHistory(ward: string) {
+  return req<{ success: boolean; ward: string; data: GarbageMissHistoryPoint[] }>(
+    `/api/garbage/history/${encodeURIComponent(ward)}`,
+  );
+}
+
+export function getGarbageAutoComplaint(ward: string) {
+  return req<{ success: boolean; ward: string; data: GarbageAutoComplaint | null }>(
+    `/api/garbage/autocomplaint/${encodeURIComponent(ward)}`,
   );
 }
 
