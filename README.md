@@ -74,6 +74,18 @@ A citizen complaint and civic issue reporting platform for **Mandya, Karnataka, 
 
 ---
 
+## Knowledge Graph (Obsidian Vault)
+
+The `nagravani_kgraph/` directory is an [Obsidian](https://obsidian.md/) vault containing project documentation, architecture specs, API reference, and feature guides.
+
+To open it:
+1. Install Obsidian from [obsidian.md](https://obsidian.md/)
+2. Click **Open folder as vault**
+3. Select `nagravani_kgraph/` from the project root
+4. Trust the author and enable the vault
+
+---
+
 ## Project Structure
 
 ```
