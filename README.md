@@ -83,6 +83,7 @@ To open it:
 2. Click **Open folder as vault**
 3. Select `nagravani_kgraph/` from the project root
 4. Trust the author and enable the vault
+5. Press CTRL+G to view the graph
 
 ---
 
