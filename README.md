@@ -1,39 +1,45 @@
+# NagaraVaani
 
-
----
-
-##  Features
-
-- **Premium UI/UX**: Built with Framer Motion and Radix UI for smooth, glassmorphic interactions.
-- **Real-time Agents**: Advanced agentic workflows integrated with a custom inspection plugin.
-- **Multi-Channel Communication**: Support for WhatsApp integration via `whatsapp-web.js` and Twilio.
-- **Dynamic Dashboards**: Interactive charts using Recharts and geographic mapping with Leaflet.
-- **Secure Backend**: Express.js server with Supabase for cloud storage and SQLite for local caching.
-- **Automated Workflows**: File upload handling with Multer and unique ID generation with UUID.
+A citizen complaint and civic issue reporting platform for **Mandya, Karnataka, India**. Residents can report problems (roads, water, electricity, garbage, sewage, noise, encroachment) and track them through government departments until resolution.
 
 ---
 
-##  Technology Stack
+## Features
+
+- **Complaint Reporting**: Multi-step form with photo upload, map picker, duplicate detection (hybrid vector + trigram similarity)
+- **AI-Powered**: Ollama (llama3.2:3b + nomic-embed-text) for semantic search, dedup, classification, Kannada translation, and RAG chatbot
+- **Multi-Channel**: Web portal + WhatsApp chatbot (Twilio state-machine flow)
+- **Community Feed**: Upvote, comment, share issues; filter by category/ward/status
+- **Government Dashboard**: Department login, status management, official responses
+- **Garbage Management**: Schedules by ward, missed report tracking, auto-complaint creation
+- **Mapping**: Interactive Leaflet map with issue markers and ward heatmap
+- **Smart Dedup**: Two-table architecture (`problems` + `complaints`) with pgvector HNSW index and pg_trgm
+
+---
+
+## Tech Stack
 
 ### Frontend
-- **Framework**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Framer Motion](https://www.framer.com/motion/)
-- **Components**: [Radix UI](https://www.radix-ui.com/) + [Lucide Icons](https://lucide.dev/)
-- **State/Data**: Supabase JS, React Hook Form, Zod
+- **Framework**: React 19 + TypeScript + Vite
+- **Styling**: Tailwind CSS + Framer Motion
+- **Components**: Radix UI + Lucide Icons
+- **Maps**: Leaflet + React-Leaflet
+- **Charts**: Recharts
 
 ### Backend
-- **Runtime**: [Node.js](https://nodejs.org/) (ES Modules)
-- **Framework**: Express.js
-- **Database**: Supabase + Better-SQLite3
-- **Integrations**: WhatsApp-Web.js, Twilio, Multer
+- **Runtime**: Node.js + Express
+- **Database**: PostgreSQL (Supabase) with pgvector + pg_trgm
+- **AI**: Ollama (local) / Groq / Together AI
+- **Integrations**: Twilio, WhatsApp-Web.js, Multer, Supabase Storage
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- npm or yarn
+- Node.js v18+
+- PostgreSQL with pgvector extension
+- Ollama (optional, for AI features)
 
 ### Installation
 
@@ -54,30 +60,46 @@
    ```bash
    cd ../backend
    npm install
+   cp .env.example .env  # configure database and API keys
+   node seed.js          # seed departments and database
    npm run dev
+   ```
+
+4. **Start Ollama (for AI features)**:
+   ```bash
+   ollama pull nomic-embed-text
+   ollama pull llama3.2:3b
+   ollama serve
    ```
 
 ---
 
 ## Project Structure
 
-```text
+```
 .
-├── app/                # React Frontend (Vite)
-│   ├── src/            # Source code
-│   └── public/         # Static assets
-├── backend/            # Node.js Express Server
-│   ├── uploads/        # File upload storage
-│   └── server.js       # Main entry point
-└── README.md           # Project documentation
+├── app/                    # React frontend
+│   ├── src/
+│   │   ├── components/    # UI components + Navbar, WardHeatMap
+│   │   ├── pages/         # ComplaintPortal, CommunityFeed, MapPage, GovDashboard, AIHelpDesk, etc.
+│   │   ├── sections/      # Landing page sections
+│   │   ├── hooks/
+│   │   ├── context/
+│   │   └── lib/           # API client, Supabase, translations
+│   └── public/
+├── backend/                # Express API server
+│   ├── routes/            # complaints, ai, departments, garbage, stats, users, whatsapp
+│   ├── migrations/        # SQL migration files
+│   ├── server.js
+│   ├── db.js
+│   ├── embeddings.js
+│   └── ai.js
+├── nagravani_kgraph/       # Obsidian knowledge graph / documentation
+└── README.md
 ```
 
 ---
 
 ## License
 
-This project is licensed under the ISC License.
-
----
-
-Built for the **Puttanaiha Foundation** team.
+ISC
